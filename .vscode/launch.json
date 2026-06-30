@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "STM32 Debug",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "device": "STM32F446RE",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32f4x.cfg"
+            ],
+            "executable": "build/bldc-motor-controller.elf",
+            "runToEntryPoint": "main",
+            "svdFile": "${env:HOME}/STM32CubeMX/db/svd/STM32F446_svd/STM32F446_svd.svd"
+        }
+    ]
+}

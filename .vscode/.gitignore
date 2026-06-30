@@ -1,0 +1,64 @@
+#Build output
+Debug/
+Release/
+build/
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+*.su
+*.cyclo
+*.lst
+
+#STM32CubeIDE / Eclipse metadata 
+.metadata/
+.settings/
+*.launch
+RemoteSystemsTempFiles/
+Servers/
+
+#STM32CubeMX
+# .mxproject
+
+#VSCode
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+!.vscode/extensions.json
+.vscode/ipch/
+*.code-workspace
+
+#Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+
+#KiCad
+*.kicad_sch-bak
+*.kicad_pcb-bak
+*-backups/
+fp-info-cache
+*.lck
+_autosave-*
+
+#OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+#Editor swap/backup files
+*~
+*.swp
+*.swo
+
+#Logs/temp
+*.log
+*.tmp
