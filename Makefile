@@ -197,3 +197,8 @@ clean:
 -include $(wildcard $(BUILD_DIR)/*.d)
 
 # *** EOF ***
+
+# flash alias
+flash: all
+	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
+		-c "program $(BUILD_DIR)/$(TARGET).bin 0x08000000 verify reset exit"
