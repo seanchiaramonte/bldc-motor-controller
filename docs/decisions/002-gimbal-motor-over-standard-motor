@@ -1,0 +1,17 @@
+# 002: Use a gimbal motor over a standard BLDC motor
+
+## Context: I wanted a BLDC motor to spin with the DRV8313 and be controlled with a PID closed-loop control algorithm. Higher RPM BLDC motors like the ones used in some drones are not very well suited for precise speed control. Gimbal motors are also 3-phase BLDC but are designed to operate at lower RPMs more precisely, meaning gimbal motors are better suited for the DRV8313 and also reduce the risk of damage to components.
+
+## Decision: Use the GM2804 Gimbal motor instead of a standard BLDC motor that operated at higher RPMs.
+
+## Consequences: 
+
+**Positives**
+- Lower current usage so the DRV8313/12V power supply 
+- Less prone to overheating and breaking even with mistakes in code
+- Low RPMs make observation and correction of commutation and PID behavior easier
+
+**Negatives**
+- Low top speed 
+- Lower torque, so the motor will perform worse under load.
+- Fewer real-world applications 
