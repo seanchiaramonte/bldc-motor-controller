@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,7 +57,12 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+int _write(int file, char *ptr, int len) // retargeting the _write() function so that printf() sends data over the UART2 peripheral
+{
+  (void)file; // file not used
+  HAL_UART_Transmit(&huart2, (uint8_t *)ptr, len, HAL_MAX_DELAY); // pointer to the huart2 handle, casting char* to uint8_t*, # of bytes to send, wait for transmission to complete (no timeout)
+  return len; // return number of bytes written
+}
 /* USER CODE END 0 */
 
 /**
@@ -97,8 +103,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-    HAL_Delay(500);
+    printf("Time since startup: %lu\n", HAL_GetTick()); // Print ms since startup over UART2
+    HAL_Delay(1000); // Wait 1 second between prints
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
