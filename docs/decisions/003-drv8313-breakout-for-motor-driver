@@ -1,0 +1,16 @@
+# 005: Use the DRV8313 Breakout Board as the motor driver 
+
+## Context: I needed a motor driver that could drive the three phases of my gimbal motor from the STM32 Nucleo-F446RE's PWM outputs. Multiple different motor drivers can do this, the DRV8313 has built in MOSFETs on its half-bridges, eliminating the need for external ones and simplifying hardware design. Other options, like the DRV8302 or DRV8323 motor drivers, don't have internal MOSFETs, and are also designed to deliver higher current to the motor, something that isn't necessary for a gimbal motor. Another option was an ESC which would remove the need to write my own commutation algorithm and also defeat much of the purpose of the STM32.
+
+## Decision: Use a DRV8313 Breakout Board, driven by three PWM outputs from the STM32 NUCLEO-F446RE.
+
+## Consequences:
+
+**Positives**
+- Contains on board MOSFETs, removing the need to wire external transistors and reducing unnecessary hardware complexity
+- Matches current capability of the gimbal motor with a margin (motor: rated 0.5 A & max 2 A, driver: 2.5 A per channel)
+- Similar control over firmware as other drivers with less hardware complexity.
+
+**Negatives**
+- Less flexibility because MOSFETs and other components can't be changed or upgraded for other use cases
+- Less experience with designing gate drivers
