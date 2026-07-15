@@ -1,0 +1,17 @@
+# Use AS5600 Magnetic Encoder
+
+## Context: I needed a way to find the position and speed of the rotor in order to calculate RPM and implement my PID closed-loop control algorithm. Since the GM2804 does not have built-in rotor position sensors, I had to add sensing externally. Hall effect sensors added to the motor itself give 6 position states per electrical revolution, meaning 42 counts per revolution. An AS5600 magnetic encoder mounted to the bottom of the motor just below a diametrically magnetized disk would give me a 12-bit angular resolution with 4096 counts per revolution. Additionally, this device can be used with I2C, making communication with other devices simple.
+
+## Decision: Use the contactless AS5600 magnetic encoder breakout with a diametrically magnetized disk attached to the motor shaft.
+
+## Consequences: 
+
+**Positives**
+- The 12-bit resolution provides a very precise angle, allowing for accurate speed and commutation calculations
+- Integration with the I2C communication protocol allows it to share one bus with other components without taking up additional GPIOs
+- Requires minimal modification to the motor
+- The AS5600 is contactless, which means the motor receives no friction or wear over time from this component
+
+**Negatives**
+- Requires mounting the encoder to the motor, and the installation of a diametrically magnetized disk on the shaft
+- Relies fully on I2C for communication, problems to the bus could mean the loss of commutation and speed calculations
