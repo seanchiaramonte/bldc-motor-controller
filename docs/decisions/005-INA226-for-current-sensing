@@ -1,0 +1,16 @@
+# 005: Use the INA226 breakout board for current sensing
+
+## Context: I wanted a way to monitor current to help protect the motor and the DRV8313. I could have used an external shunt resistor along with an amplifier like the INA180 and sent the output to the STM32's built-in ADC, however, this would involve more hardware complexity and firmware configuration of the ADC. Conversely, the INA226 breakout board includes an on-board, 0.1 ohm shunt resistor, an amplifier, and a 16-bit ADC which allows it to measure current more precisely. The INA226 is also an I2C device, making integration with other I2C components easier.
+
+## Decision: Use the INA226 current sensor breakout with its on-board shunt resistor, amplifier, and ADC, sending data over I2C.
+
+## Consequences: 
+
+**Positives**
+- Allows for protection of sensitive components when current abnormalities are detected
+- Removes the need to add an external amplifier and shunt resistor, reducing hardware and firmware complexity
+- Allows for integration across the same I2C bus used by the AS5600
+
+**Negatives**
+- Only measures the total current, not individual phase currents
+- More expensive than simpler solutions
