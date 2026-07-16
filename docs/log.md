@@ -15,3 +15,12 @@
 ## 2026-07-13
 - Retargeted the _write stub to send data over UART in main.c when printf() is called
 - Flashed Coolterm to setup debug window
+
+## 2026-07-14
+- Updated decisions folder and explained why I chose to use the DRV8313 breakout board
+
+## 2026-07-15
+- Documented the AS5600 breakout board decision and included rationale
+- Documented the INA226 breakout board decision and included rationale
+- Redesigned the KiCad schematic by removing unnecessary components and adding new net labels
+- Updated the hardware folder with the .pdf and .kicad_sch files for the schematic
