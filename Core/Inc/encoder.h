@@ -9,48 +9,60 @@
  * 
  * @details The last currentAngle reading is set equal to previousAngle, giving that variable an initial value. 
  * The HAL_GetTick() function is run and set equal to previousTick, giving that variable an initial value. 
- * This prevents the Encoder_GetRPM() function from using the default 0 values, which would cause a false spike in RPM.
+ * This prevents the Encoder_Update() function from using the default 0 values, which would cause a false spike in RPM.
  * 
  * @param currentAngle The raw angle (0-4095) read from the AS5600.
  */
 void Encoder_Initialize(uint16_t currentAngle);
 
 /**
- * @brief Calculates mechanical RPM from the raw angle value read from the AS5600.
+ * @brief Calculates filteredRPM, electricalAngle, and commutationSector
  * 
  * @details 
  * Finds the change in angle after every iteration, accounts for rollover by adding or subtracting 4096 appropriately, 
  * calculates change in time with the HAL_GetTick function, and calculates RPM while accounting for division by zero, 
- * and applies a low-pass filter to the raw RPM value.
+ * applies a low-pass filter to the rawRPM value, converts the mechanical angle into electrical angle and commutation sector. 
+ * Results of these calculations are stored in static global variables.
  * 
  * @param currentAngle The raw angle (0-4095) read from the AS5600, obtained through an AS5600_ReadAngle() call from the MotorControlTask.
  * 
- * @note Currently has no caller. Will be called once MotorControlTask in main.c is written.
+ * @note Currently has no caller. Will be called once MotorControlTask in main.c is written. 
+ * 
+ * @warning This function must only be called once per tick and only from MotorControlTask.
+ */
+void Encoder_Update(uint16_t currentAngle);
+
+/**
+ * @brief Returns the most recent filteredRPM value.
+ * 
+ * @details 
+ * Performs no calculations and only returns filteredRPM which is updated by the Encoder_Update() function. 
+ * This function is safe to call multiple times per tick anywhere in the project.
  * 
  * @return The filteredRPM value as a float. 
  */
-float Encoder_GetRPM(uint16_t currentAngle);
+float Encoder_GetRPM(void);
 
 /**
- * @brief Converts the raw mechanical angle from as5600.c to an electrical angle.
+ * @brief Returns the most recent electricalAngle value.
  * 
- * @details Multiplies the mechanical angle value by the number of pole pairs (7), and wrapes that value using the modulo operator into the range 0-4095.
+ * @details 
+ * Performs no calculations and only returns electricalAngle which is updated by the Encoder_Update() function. 
+ * This function is safe to call multiple times per tick anywhere in the project.
  * 
- * @param currentAngle The raw angle (0-4095) read from the AS5600.
- * 
- * @return The electrical angle in counts (0-4095).
+ * @return The electricalAngle value as a 16-bit unsigned integer.
  */
-uint16_t Encoder_GetElectricalAngle(uint16_t currentAngle);
+uint16_t Encoder_GetElectricalAngle(void);
 
 /**
- * @brief Determines which of the 6 commutation sectors the electrical angle is currently in.
+ * @brief Returns the most recent commutationSector value.
  * 
- * @details Divides the electrical angle by 683 (approx. 1/6th of 4096).
+ * @details
+ * Performs no calculations and only returns commutationSector which is updated by the Encoder_Update function. 
+ * This function is safe to call multiple times per tick anywhere in the project.
  * 
- * @param electricalAngle The electrical angle in counts (0-4095).
- * 
- * @return The commutation sector index (0-5).
+ * @return The commutation sector index (0-5) as a 16-bit unsigned integer.
  */
-uint16_t Encoder_GetSector(uint16_t electricalAngle);
+uint16_t Encoder_GetSector(void);
 
 #endif /* ENCODER_H */
