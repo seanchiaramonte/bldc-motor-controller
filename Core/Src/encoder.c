@@ -1,6 +1,8 @@
 #include "stm32f4xx_hal.h"
 #include "encoder.h"
 
+#define POLE_PAIRS 7
+
 static uint16_t previousAngle = 0;
 static uint32_t previousTick = 0;
 
@@ -34,4 +36,20 @@ float mechanicalRPM(uint16_t currentAngle)
     float RPM = (deltaAngle / 4096.0f) / dtMs * 60000;
 
     return RPM; 
+}
+
+uint16_t Encoder_GetElectricalAngle(uint16_t currentAngle)
+{
+    uint16_t electricalAngle = currentAngle * POLE_PAIRS;
+
+    electricalAngle = electricalAngle % 4096; // Divide the electricalAngle by 4096 and return the remainder
+
+    return electricalAngle;
+}
+
+uint16_t Encoder_GetSector(uint16_t electricalAngle)
+{
+    uint16_t commutationSector = electricalAngle / 683;
+
+    return commutationSector;
 }

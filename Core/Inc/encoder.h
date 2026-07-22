@@ -19,4 +19,27 @@
  * @return The RPM value as a float with no low-pass filter. 
  */
 float mechanicalRPM(uint16_t currentAngle);
+
+/**
+ * @brief Converts the raw mechanical angle from as5600.c to an electrical angle.
+ * 
+ * @details Multiplies the mechanical angle value by the number of pole pairs (7), and wrapes that value using the modulo operator into the range 0-4095.
+ * 
+ * @param currentAngle The raw angle (0-4095) read from the AS5600
+ * 
+ * @return The electrical angle in counts (0-4095).
+ */
+uint16_t Encoder_GetElectricalAngle(uint16_t currentAngle);
+
+/**
+ * @brief Determines which of the 6 commutation sectors the electrical angle is currently in.
+ * 
+ * @details Divides the electrical angle by 683 (approx. 1/6th of 4096).
+ * 
+ * @param electricalAngle The electrical angle in counts (0-4095).
+ * 
+ * @return The commutation sector index (0-5).
+ */
+uint16_t Encoder_GetSector(uint16_t electricalAngle);
+
 #endif /* ENCODER_H */
