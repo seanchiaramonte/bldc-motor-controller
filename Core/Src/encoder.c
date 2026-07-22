@@ -7,7 +7,7 @@ static uint16_t previousAngle = 0;
 static uint32_t previousTick = 0;
 
 // See encoder.h for function documentation
-float mechanicalRPM(uint16_t currentAngle)
+float Encoder_GetRPM(uint16_t currentAngle)
 {
     // Finds the change in angle after every iteration
     int16_t deltaAngle = currentAngle - previousAngle;

@@ -18,7 +18,7 @@
  * 
  * @return The RPM value as a float with no low-pass filter. 
  */
-float mechanicalRPM(uint16_t currentAngle);
+float Encoder_GetRPM(uint16_t currentAngle);
 
 /**
  * @brief Converts the raw mechanical angle from as5600.c to an electrical angle.
