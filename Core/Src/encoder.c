@@ -2,9 +2,17 @@
 #include "encoder.h"
 
 #define POLE_PAIRS 7
+#define ALPHA 0.2f
 
 static uint16_t previousAngle = 0;
 static uint32_t previousTick = 0;
+static float filteredRPM = 0.0f;
+
+void Encoder_Initialize(uint16_t currentAngle)
+{
+    previousAngle = currentAngle;
+    previousTick = HAL_GetTick();
+}
 
 // See encoder.h for function documentation
 float Encoder_GetRPM(uint16_t currentAngle)
@@ -29,13 +37,16 @@ float Encoder_GetRPM(uint16_t currentAngle)
     // Accounts for division by zero
     if 
     (dtMs == 0) {
-        return 0.0f; // Returns 0.0 if two ticks happen in 1 ms
+        return filteredRPM; // Returns previous filteredRPM value
     }
 
     // Calculates RPM
-    float RPM = (deltaAngle / 4096.0f) / dtMs * 60000;
+    float rawRPM = (deltaAngle / 4096.0f) / dtMs * 60000;
 
-    return RPM; 
+    // Low-pass filter
+    filteredRPM = ALPHA * rawRPM + (1 - ALPHA) * filteredRPM;
+
+    return filteredRPM; 
 }
 
 uint16_t Encoder_GetElectricalAngle(uint16_t currentAngle)

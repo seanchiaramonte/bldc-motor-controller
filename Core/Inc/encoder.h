@@ -5,18 +5,29 @@
 #include "as5600.h"
 
 /**
+ * @brief Sets initial values for variables previousAngle and previousTick
+ * 
+ * @details The last currentAngle reading is set equal to previousAngle, giving that variable an initial value. 
+ * The HAL_GetTick() function is run and set equal to previousTick, giving that variable an initial value. 
+ * This prevents the Encoder_GetRPM() function from using the default 0 values, which would cause a false spike in RPM.
+ * 
+ * @param currentAngle The raw angle (0-4095) read from the AS5600.
+ */
+void Encoder_Initialize(uint16_t currentAngle);
+
+/**
  * @brief Calculates mechanical RPM from the raw angle value read from the AS5600.
  * 
  * @details 
  * Finds the change in angle after every iteration, accounts for rollover by adding or subtracting 4096 appropriately, 
  * calculates change in time with the HAL_GetTick function, and calculates RPM while accounting for division by zero, 
- * storing the value as a float.
+ * and applies a low-pass filter to the raw RPM value.
  * 
  * @param currentAngle The raw angle (0-4095) read from the AS5600, obtained through an AS5600_ReadAngle() call from the MotorControlTask.
  * 
  * @note Currently has no caller. Will be called once MotorControlTask in main.c is written.
  * 
- * @return The RPM value as a float with no low-pass filter. 
+ * @return The filteredRPM value as a float. 
  */
 float Encoder_GetRPM(uint16_t currentAngle);
 
@@ -25,7 +36,7 @@ float Encoder_GetRPM(uint16_t currentAngle);
  * 
  * @details Multiplies the mechanical angle value by the number of pole pairs (7), and wrapes that value using the modulo operator into the range 0-4095.
  * 
- * @param currentAngle The raw angle (0-4095) read from the AS5600
+ * @param currentAngle The raw angle (0-4095) read from the AS5600.
  * 
  * @return The electrical angle in counts (0-4095).
  */
