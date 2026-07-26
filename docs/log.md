@@ -24,3 +24,24 @@
 - Documented the INA226 breakout board decision and included rationale
 - Redesigned the KiCad schematic by removing unnecessary components and adding new net labels
 - Updated the hardware folder with the .pdf and .kicad_sch files for the schematic
+
+## 2026-07-17
+- Reconfigured STM32MX initialization code to prepare to write code for the motor controller
+- Created as5600.h and as5600.c files
+
+## 2026-07-20
+- Completed as5600.h and included Doxygen documentation above the AS5600_ReadAngle() function declaration
+- Completed as5600.c, defining the as5600's I2C address and the AS5600_ReadAngle() function
+
+## 2026-07-21
+- Implemented encoder.h with declarations and documentation for each function
+- Implemented encoder.c with mechanical RPM, electrical angle, and sector index calculations
+- Cleaned up code for the encoder module
+
+## 2026-07-22
+- Implemented the encoder_initialize() function
+- Restructured encoder.c so that the functions, Encoder_GetRPM, Encoder_GetElectricalAngle, and Encoder_GetSector, are pure getters
+- Restructured encoder.c by adding the Encoder_Update function to allow the getters to be called at any time
+
+## 2026-07-23
+- Created pid.h and pid.c files
