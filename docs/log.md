@@ -45,3 +45,20 @@
 
 ## 2026-07-23
 - Created pid.h and pid.c files
+
+## 2026-07-26
+- Updated log.md
+
+## 2026-07-28
+- Implemented the PID_Initialize() and PID_Reset() functions 
+- Added Doxygen documentation for both functions
+
+## 2026-07-29
+- Implemented the PID_Update function with its Doxygen documentation
+
+## 2026-08-02
+- Fixed PID_Initialize() to zero integral and previousRPM values
+- Updated the PID_Initialize() Doxygen comment in pid.h
+
+## 2026-08-03
+- Updated log.md
