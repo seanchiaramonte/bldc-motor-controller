@@ -26,6 +26,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "as5600.h"
+#include "encoder.h"
 #include <stdio.h>
 #include <string.h>
 /* USER CODE END Includes */
@@ -106,23 +108,49 @@ int main(void)
   /* USER CODE END 2 */
 
   /* Init scheduler */
-  osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
-  MX_FREERTOS_Init();
+  //osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
+  //MX_FREERTOS_Init();
 
   /* Start scheduler */
-  osKernelStart();
+  //osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint16_t angle;
+  HAL_StatusTypeDef status = AS5600_ReadAngle(&angle);
+
+  if (status == HAL_OK) {
+      Encoder_Initialize(angle); 
+    } else {
+      // Return handled in as5600.c
+    }
+
   while (1)
   {
-    printf("Time since startup: %lu\n", HAL_GetTick()); // Print ms since startup over UART2
-    HAL_Delay(1000); // Wait 1 second between prints
+   // Temporary debug code
+    status = AS5600_ReadAngle(&angle);
+
+    if (status == HAL_OK) {
+      Encoder_Update(angle); 
+
+      // New variables because variables are static in encoder.c
+      float RPM = Encoder_GetRPM();
+      uint16_t eAngle = Encoder_GetElectricalAngle();
+      uint16_t sector = Encoder_GetSector();
+      
+      char buffer[70]; // Array size comfortably fits above the worst case scenario of approx. 45 characters
+      int len = sprintf(buffer, "angle=%u eAngle=%u sector=%u RPM=%.1f\r\n", angle, eAngle, sector, RPM);
+      HAL_UART_Transmit(&huart2, (uint8_t *)buffer, len, HAL_MAX_DELAY);
+    } else {
+      char *error = "AS5600 read failed\r\n";
+      HAL_UART_Transmit(&huart2, (uint8_t *)error, strlen(error), HAL_MAX_DELAY);
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    HAL_Delay(50);
   }
   /* USER CODE END 3 */
 }
