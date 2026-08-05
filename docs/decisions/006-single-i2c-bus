@@ -1,0 +1,16 @@
+# 006: Use a single shared I2C bus for all devices that use this communication protocol instead of giving each device its own 
+
+## Context: The project includes the AS5600 encoder (0x36), the INA226 current sensor (0x40), and the SSD1306 OLED display (0x3C), and possibly other I2C devices in the future. These devices all need an I2C connection. I could either give each device its own SDA and SCL pins, which is possible because the STM32 NUCLEO-F446RE has multiple I2C peripherals, or I could put all of the I2C devices on one SDA/SCL pair and use I2C addresses to differentiate each device. Separate peripherals would mean devices can communicate simultaneously, and one device failing or holding the bus would not affect the others. All three devices have on-board pull-ups (INA226 10k ohm, SSD1306 4.7k ohm, AS5600 4.7k ohm). These operate in parallel, giving a combined value of approx. 1.9k ohm, which is above the ~1.1k ohm floor.
+
+## Decision: Use PB8 (SCL) and PB9 (SDA) on the STM32 as one shared bus for all I2C devices using the on-board pull up resistors included in all three devices and not adding any external ones.
+
+## Consequences: 
+
+**Positives**
+- Uses only two GPIO pins no matter how many devices I end up adding, this leaves i2c2 and i2c3 free for possible future use
+- Simpler firmware since I only initialize one I2C peripheral (i2c1)
+- Each device has a separate I2C address, so the STM32 can address each device individually over the shared wires
+
+**Negatives**
+- Only one transaction can happen at a time. So the motor control task may have to wait for the display task, for example. FreeRTOS priority does not help because a higher priority task still has to wait for an in-progress transaction to finish
+- A single fault in one device on the bus will take down every other device with it
