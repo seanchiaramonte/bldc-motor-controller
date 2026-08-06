@@ -1,0 +1,17 @@
+# 009: Add the SSD1306 for local motor status display
+
+## Context: While Bluetooth integration through the HM-10 already makes the system operate somewhat independently, I wanted the system to be standalone from my laptop. I could have used a serial monitor to display data in an application like CoolTerm, but this would obviously require connection to a computer which I am trying to avoid. Additionally, I could have no local status display at all which would reduce hardware and firmware complexity, but this means I would have no access to status data, except through CoolTerm. Overall, my laptop is convenient for development, but a local OLED display built into the perfboard is more convenient because it can provide status information immediately and independently, without being connected and reliant on a laptop.
+
+## Decision: Add an SSD1306 OLED Display (0x3C), using the existing shared I2C bus to show live status data.
+
+## Consequences: 
+
+**Positives**
+- Essentially makes the embedded system standalone, requiring minimal interaction with a laptop or other external devices
+- Easily integrated into the existing I2C bus, which already includes two other modules
+- Makes important status data easily accessible without relying on CoolTerm, whose main purpose is debugging
+
+**Negatives**
+- Adds additional hardware and software complexity, requiring more wiring and code
+- Very small display size, meaning only a small amount of data can be displayed at once and readability may be limited
+- Adds traffic to the shared I2C bus. The AS5600 is read every 1ms by the motor control task and the display refresh takes 5ms meaning a display update could block or delay an encoder read (needs mutex protection)
