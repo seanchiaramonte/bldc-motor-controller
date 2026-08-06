@@ -1,0 +1,18 @@
+# 007: Use six-step trapezoidal commutation over sinusoidal commutation
+
+## Context: Now that the AS5600 is providing the angle value of the shaft inside the motor, I needed a reliable way to drive the three motor phases in my firmware. Trapezoidal commutation needs to know which of the six 60-degree sectors the rotor is in at any given moment. It switches one phase on, one phase off, and leaves one phase floating via the MOSFETs on the half-bridges on the DRV8313 based on that sector value. Sinusoidal commutation needs the electrical angle value at any given moment to calculate sinusoidally changing PWM signals that go to the three motor phases. This creates a smooth, rotating magnetic field that drives the motor with less audible noise but is harder to debug, much more complex from a firmware perspective, and is more sensitive to encoder noise. 
+
+## Decision: Use trapezoidal six-step commutation and use the angle value from the AS5600 to find the sector value and electrify the motor phases accordingly.
+
+## Consequences: 
+
+**Positives**
+- Simpler firmware that doesn't require sinusoidal calculations to output PWM signals
+- Much easier to debug since trapezoidal commutation only involves six states, meaning I can inspect the current sector and phase states easily
+- Less sensitive to encoder noise created by the AS5600 because jitter only changes output when an electrical angle reading is near a 60 degree boundary (electrical angle quantized into 6 sectors)
+- Faster path to a working prototype (easy to switch to sinusoidal in the future)
+
+**Negatives**
+- More audible noise due to sudden changes in the magnetic field, which causes torque ripple and vibrations in the motor
+- Less smooth torque and more fluctuations in acceleration
+- Trapezoidal commutation is simplified in my code to drive the third phase low instead of to a true floating value
