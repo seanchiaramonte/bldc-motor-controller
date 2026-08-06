@@ -1,0 +1,17 @@
+# 008: Use the HM-10 BLE module for wireless control and bluetooth compatibility
+
+## Context: Instead of sending and receiving signals via a USB connection to my laptop, I wanted a way to wirelessly send target RPM commands and receive back the necessary telemetry data wirelessly. I thought about using an ESP32 and sending data over Wi-Fi which can handle larger amounts of data at higher speeds. However, the ESP32 is overkill in this case because I only need to send a few commands wirelessly and receive small amounts of telemetry data like RPM. The HM-10 fits better for this use case because it's simpler, requires less software and is built for lower data rates. Additionally the HM-10 operates at 3.6-6V meaning the HM-10's VCC pin needs to be connected to 5V instead of 3.3V which is below that range.
+
+## Decision: Use the HM-10 BLE module connected to the STM32's USART3 peripheral with PC10 as STM32 TX and PC11 as STM32 RX, running at 9600 baud and connected to 5V.
+
+## Consequences: 
+
+**Positives**
+- More convenient compared to a wired communication system that requires physical connection before each use
+- Lower power usage compared to Wi-Fi communication systems
+- Designed to connect via UART, making integration with the STM32 easier
+
+**Negatives**
+- Bluetooth Low Energy is designed for short-range communication, meaning the HM-10 has lower range than Wi-Fi
+- Lower data rate, meaning it's unsuitable for high-frequency or time-critical communication involving large amounts of data
+- No security or authentication, meaning anyone in range can connect
