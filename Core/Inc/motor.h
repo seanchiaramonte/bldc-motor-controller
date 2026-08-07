@@ -48,4 +48,14 @@ void Motor_Disable(void);
  */
 void Motor_ApplyCommutation(uint16_t commutationSector, float dutyCycle);
 
+/**
+ * @brief Checks for fault on the DRV8313's nFT pin.
+ * 
+ * @details 
+ * Uses the HAL_GPIO_ReadPin() function to read the nFT pin. If the pin is HIGH, it returns 0 (no fault), and if the pin is LOW, it 
+ * returns 1 (fault). Since the nFT pin is active-LOW, the STM32's internal pull-up (enabled in STM32CubeMX) holds the pin HIGH 
+ * normally and the DRV8313 pulls it LOW in the case of a fault.
+ */
+uint8_t Motor_CheckFault(void);
+
 #endif /* MOTOR_H */

@@ -16,9 +16,11 @@ const commutation_T commutationTable[6][3] = {
     {FLOAT, LOW, HIGH} // Sector 5
 };
 
+// See motor.h for function documentation
 void Motor_Initialize(void) 
  {
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); // Starts PWM output for respective channel
+    // Starts PWM output for respective channel
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); 
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 
@@ -27,14 +29,17 @@ void Motor_Initialize(void)
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 0);
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 0);
 
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET); // Sets EN low until Motor_Enable()
+    // Sets EN low until Motor_Enable()
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET); 
 }
 
+// See motor.h for function documentation
 void Motor_Enable(void) 
 {
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET); // Sets EN high
 }
 
+// See motor.h for function documentation
 void Motor_Disable(void) 
 {
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET); // Sets EN low
@@ -44,6 +49,7 @@ void Motor_Disable(void)
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 0);
 }
 
+// See motor.h for function documentation
 void Motor_ApplyCommutation(uint16_t commutationSector, float dutyCycle)
 {
     // Converts the output percentage value (0.0-100.0) to a raw compare-register value (0-8999)
@@ -72,4 +78,18 @@ void Motor_ApplyCommutation(uint16_t commutationSector, float dutyCycle)
     } else { 
         __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 0);
     } 
+}
+
+// See motor.h for function documentation
+uint8_t Motor_CheckFault(void)
+{
+    // Reads the nFT pin on the DRV8313
+    GPIO_PinState status = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_1); 
+
+    // nFT is active-LOW.
+    if (status == GPIO_PIN_SET) {
+        return 0; // No fault detected
+    } else {
+        return 1; // Fault detected
+    }
 }
