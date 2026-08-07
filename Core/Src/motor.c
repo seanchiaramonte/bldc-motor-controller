@@ -16,7 +16,8 @@ const commutation_T commutationTable[6][3] = {
     {FLOAT, LOW, HIGH} // Sector 5
 };
 
- void Motor_Initialize(void) {
+void Motor_Initialize(void) 
+ {
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); // Starts PWM output for respective channel
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
@@ -27,4 +28,18 @@ const commutation_T commutationTable[6][3] = {
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 0);
 
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET); // Sets EN low until Motor_Enable()
+}
+
+void Motor_Enable(void) 
+{
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET); // Sets EN high
+}
+
+void Motor_Disable(void) 
+{
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET); // Sets EN low
+
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 0);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 0);
 }
