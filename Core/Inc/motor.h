@@ -35,4 +35,17 @@ void Motor_Enable(void);
  */
 void Motor_Disable(void);
 
+/**
+ * @brief Applies six-step commutation for the given sector and duty cycle.
+ * 
+ * @details 
+ * Converts the output percentage value (0.0-100.0) from pid.c into a raw compare-register value 
+ * (from 0 to htim1.Init.Period, the ARR of 8999) and stores the result in compareValue. The function then writes compareValue 
+ * to the compare register if any phase is HIGH, and sets the compare-register to 0 if the phase is LOW or FLOAT.
+ * 
+ * @param commutationSector The current commutation sector (0-5) calculated from the electrical angle via Encoder_Update() in encoder.c.
+ * @param dutyCycle The PWM duty cycle (0.0-100.0) calculated from the PID output via PID_Update() in pid.c.
+ */
+void Motor_ApplyCommutation(uint16_t commutationSector, float dutyCycle);
+
 #endif /* MOTOR_H */
