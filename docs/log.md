@@ -62,3 +62,25 @@
 
 ## 2026-08-03
 - Updated log.md
+
+## 2026-08-04
+- Wrote temporary code block in main.c to test and debug as5600.c and encoder.c
+- Connected the GND, VCC, SCL, and SDA pins to the STM32 with jumper wires
+- Confirmed as5600 and encoder modules work by sending angle, electrical angle, sector, and RPM values to CoolTerm
+- Fixed make error by adding as5600.c and encoder.c files to Makefile
+
+## 2026-08-05
+- Documented the decision to use a single I2C bus via decision 006 in the decisions folder
+- Documented the decision to use trapezoidal commutation via decision 007 in the decisions folder
+
+## 2026-08-06
+- Documented decision to use the HM-10 BLE module via decision 008 in the decisions folder
+- Documented decision to use the SSD1306 OLED display via decision 009 in the decisions folder
+- Created motor.h and motor.c files
+- Implemented the Motor_Initialize() function in motor.c with Doxygen doc in motor.h
+- Implemented the Motor_Enable() and Motor_Disable() functions in motor.c with Doxygen docs in motor.h
+
+## 2026-08-07
+- Implemented Motor_ApplyCommutation() function in motor.c with Doxygen doc in motor.h
+- Implemented Motor_CheckFault() function in motor.c with Doxygen doc in motor.h
+- Updated log.md
