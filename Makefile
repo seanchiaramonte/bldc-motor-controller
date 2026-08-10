@@ -61,6 +61,8 @@ Core/Src/freertos.c \
 Core/Src/i2c.c \
 Core/Src/as5600.c \
 Core/Src/encoder.c \
+Core/Src/pid.c \
+Core/Src/motor.c \
 Core/Src/tim.c \
 Core/Src/usart.c \
 Core/Src/stm32f4xx_hal_timebase_tim.c \
