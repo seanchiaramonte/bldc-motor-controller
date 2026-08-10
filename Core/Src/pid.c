@@ -9,9 +9,9 @@ void PID_Initialize(PID_t *speedPID)
     speedPID->kd = 0.2f;
     speedPID->integral = 0.0f;
     speedPID->previousRPM = 0.0f;
-    speedPID->integralMin = -100.0f;
+    speedPID->integralMin = 0.0f;
     speedPID->integralMax = 100.0f;
-    speedPID->outputMin = -100.0f;
+    speedPID->outputMin = 0.0f;
     speedPID->outputMax = 100.0f;
 
     return;
@@ -29,6 +29,12 @@ void PID_Reset(PID_t *speedPID)
 // See pid.h for function documentation
 float PID_Update(PID_t *speedPID, float targetRPM, float actualRPM, float dt)
 {
+    // Accounts for derivative division by zero or negative values
+    if 
+    (dt <= 0.0f) {
+        return 0.0f; // Returns 0.0f if dt is zero or negative
+    }
+
     // Calculates error
     float error = targetRPM - actualRPM;
 

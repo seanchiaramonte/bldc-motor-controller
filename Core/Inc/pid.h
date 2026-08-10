@@ -51,11 +51,11 @@
   * @brief Calculates error and the final, clamped PID value.
   * 
   * @details 
-  * Calculates error from the setpoint (targetRPM) and measurement (actualRPM). Calculates the P term by multiplying kp by error.
-  * Calculates the integral, clamps that integral to prevent windup, and assigns the clamped integral value to the I term.
-  * Calculates the D term using derivative on measurement (actualRPM) to eliminate derivative kick caused by changes in targetRPM 
-  * over bluetooth. Derivative noise amplification is reduced through the low-pass filter in encoder.c. Adds the P, I, and D terms 
-  * and clamps the final PID value.
+  * Guards against derivative division by zero or negative dt values. Calculates error from the setpoint (targetRPM) and measurement (actualRPM). 
+  * Calculates the P term by multiplying kp by error. Calculates the integral, clamps that integral to prevent windup, and assigns the clamped 
+  * integral value to the I term. Calculates the D term using derivative on measurement (actualRPM) to eliminate derivative kick caused by changes 
+  * in targetRPM over bluetooth. Derivative noise amplification is reduced through the low-pass filter in encoder.c. Adds the P, I, and D 
+  * terms and clamps the final PID value.
   * 
   * @param SpeedPID A pointer to the speedPID struct to access all needed variables
   * @param targetRPM The desired RPM value received over bluetooth in bluetooth.c.
