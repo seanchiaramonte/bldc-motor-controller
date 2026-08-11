@@ -11,7 +11,7 @@
  * @details 
  * Starts the PWM output for TIM1 channels 1, 2, and 3, via the HAL_TIM_PWM_Start() function. Then, it sets the 
  * compare registers for each channel to zero using the __HAL_TIM_SET_COMPARE() macro. Finally, it sets the EN pin low to 
- * disable the motor until Motor_Enable() is called.
+ * disable the motor's half-bridges until Motor_Enable() is called.
  * 
  */
 void Motor_Initialize(void);
@@ -20,9 +20,9 @@ void Motor_Initialize(void);
  * @brief Enables the motor driver by setting the EN pin high.
  * 
  * @details 
- * Uses the HAL_GPIO_WritePin() function with the GPIO_PIN_SET parameter to set the EN pin high. This enables the DRV8313 motor
- * driver, allowing the PWM signals from the compare registers to reach the motor phases.
- * 
+ * Uses the HAL_GPIO_WritePin() function with the GPIO_PIN_SET parameter to set the EN pin high. This enables the DRV8313's 
+ * half-bridges. While EN is low, the motor phases are disconnected from 12V and ground. When EN is high, each phase is 
+ * driven to either 12V or ground depending on its compare register value.
  */
 void Motor_Enable(void);
 
@@ -41,7 +41,7 @@ void Motor_Disable(void);
  * @details 
  * Converts the output percentage value (0.0-100.0) from pid.c into a raw compare-register value 
  * (from 0 to htim1.Init.Period, the ARR of 8999) and stores the result in compareValue. The function then writes compareValue 
- * to the compare register if any phase is HIGH, and sets the compare-register to 0 if the phase is LOW or FLOAT.
+ * to the compare register if any phase is HIGH, and sets the compare-register to 0 if the phase is LOW.
  * 
  * @param commutationSector The current commutation sector (0-5) calculated from the electrical angle via Encoder_Update() in encoder.c.
  * @param dutyCycle The PWM duty cycle (0.0-100.0) calculated from the PID output via PID_Update() in pid.c.
@@ -55,6 +55,8 @@ void Motor_ApplyCommutation(uint16_t commutationSector, float dutyCycle);
  * Uses the HAL_GPIO_ReadPin() function to read the nFT pin. If the pin is HIGH, it returns 0 (no fault), and if the pin is LOW, it 
  * returns 1 (fault). Since the nFT pin is active-LOW, the STM32's internal pull-up (enabled in STM32CubeMX) holds the pin HIGH 
  * normally and the DRV8313 pulls it LOW in the case of a fault.
+ * 
+ * @return 1 if a fault is detected, 0 otherwise.
  */
 uint8_t Motor_CheckFault(void);
 

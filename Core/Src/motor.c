@@ -1,24 +1,24 @@
 #include "motor.h"
 
-typedef enum commutationTable {
+typedef enum {
     HIGH,
     LOW,
-    FLOAT // The same as low with a PWM duty cycle of 0%
 } commutation_T;
 
+// The SimpleFOC Mini Breakout ties all enable pins to the same EN pin
+// When EN is HIGH, every half-bridge is active meaning only HIGH and LOW states are possible
 const commutation_T commutationTable[6][3] = {
-    // 1/3 HIGH, 1/3 LOW, 1/3 FLOAT with FLOAT acting as a transition from HIGH to LOW
-    {HIGH, LOW, FLOAT}, // Sector 0
-    {HIGH, FLOAT, LOW}, // Sector 1
-    {FLOAT, HIGH, LOW}, // Sector 2
-    {LOW, HIGH, FLOAT}, // Sector 3
-    {LOW, FLOAT, HIGH}, // Sector 4
-    {FLOAT, LOW, HIGH} // Sector 5
+    {HIGH, LOW, LOW }, // Sector 0 (0°)
+    {HIGH, HIGH, LOW }, // Sector 1 (60°)
+    {LOW, HIGH, LOW }, // Sector 2 (120°)
+    {LOW, HIGH, HIGH}, // Sector 3 (180°)
+    {LOW, LOW, HIGH}, // Sector 4 (240°)
+    {HIGH, LOW, HIGH} // Sector 5 (300°)
 };
 
 // See motor.h for function documentation
 void Motor_Initialize(void) 
- {
+{
     // Starts PWM output for respective channel
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); 
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -56,7 +56,7 @@ void Motor_ApplyCommutation(uint16_t commutationSector, float dutyCycle)
     uint16_t compareValue = (uint16_t)(dutyCycle * htim1.Init.Period / 100.0f);
 
     // Apply PWM to phases that are HIGH
-    // Disable PWM for LOW and FLOAT phases by setting their compare registers to 0
+    // Ground LOW phases by setting their compare registers to 0 (turns low-side MOSFET(s) on)
 
     // Phase A
     if (commutationTable[commutationSector][0] == HIGH) {
