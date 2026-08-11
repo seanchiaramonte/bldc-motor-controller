@@ -20,9 +20,10 @@ void Encoder_Initialize(uint16_t currentAngle);
  * 
  * @details 
  * Finds the change in angle after every iteration, accounts for rollover by adding or subtracting 4096 appropriately, 
- * calculates change in time with the HAL_GetTick function, and calculates RPM while accounting for division by zero, 
- * applies a low-pass filter to the rawRPM value, converts the mechanical angle into electrical angle and commutation sector. 
- * Results of these calculations are stored in static global variables.
+ * calculates change in time with the HAL_GetTick function, and calculates RPM while accounting for division by zero by returning early 
+ * and using filteredRPM as the previous value, skipping previousTick and previousAngle calculations. The function applies a low-pass 
+ * filter to the rawRPM value, converts the mechanical angle into electrical angle while accounting for offset and offset rollover, 
+ * and determines the commutation sector. Results of these calculations are stored in static global variables.
  * 
  * @param currentAngle The raw angle (0-4095) read from the AS5600, obtained through an AS5600_ReadAngle() call from the MotorControlTask.
  * 
