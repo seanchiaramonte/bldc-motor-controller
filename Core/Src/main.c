@@ -28,6 +28,8 @@
 /* USER CODE BEGIN Includes */
 #include "as5600.h"
 #include "encoder.h"
+#include "pid.h"
+#include "motor.h"
 #include <stdio.h>
 #include <string.h>
 /* USER CODE END Includes */
@@ -105,6 +107,13 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  // Temporary debug code
+  Motor_Initialize();
+  HAL_Delay(100);
+  Motor_Enable();
+  HAL_Delay(100);
+  Motor_ApplyCommutation(2, 15.0f); // Sets duty cycle to 15% for testing
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -118,39 +127,17 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint16_t angle;
-  HAL_StatusTypeDef status = AS5600_ReadAngle(&angle);
-
-  if (status == HAL_OK) {
-      Encoder_Initialize(angle); 
-    } else {
-      // Return handled in as5600.c
-    }
-
   while (1)
   {
    // Temporary debug code
-    status = AS5600_ReadAngle(&angle);
-
-    if (status == HAL_OK) {
-      Encoder_Update(angle); 
-
-      // New variables because variables are static in encoder.c
-      float RPM = Encoder_GetRPM();
-      uint16_t eAngle = Encoder_GetElectricalAngle();
-      uint16_t sector = Encoder_GetSector();
-      
-      char buffer[70]; // Array size comfortably fits above the worst case scenario of approx. 45 characters
-      int len = sprintf(buffer, "angle=%u eAngle=%u sector=%u RPM=%.1f\r\n", angle, eAngle, sector, RPM);
-      HAL_UART_Transmit(&huart2, (uint8_t *)buffer, len, HAL_MAX_DELAY);
-    } else {
-      char *error = "AS5600 read failed\r\n";
-      HAL_UART_Transmit(&huart2, (uint8_t *)error, strlen(error), HAL_MAX_DELAY);
+   if (Motor_CheckFault()) {
+      Motor_Disable();
+      printf("Fault detected on DRV8313\r\n");
+      HAL_Delay(1000); // Prevents flooding of printf messages
     }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_Delay(50);
   }
   /* USER CODE END 3 */
 }
