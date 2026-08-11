@@ -112,8 +112,8 @@ int main(void)
   HAL_Delay(100);
   Motor_Enable();
   HAL_Delay(100);
-  Motor_ApplyCommutation(2, 15.0f); // Sets duty cycle to 15% for testing
-
+  Motor_ApplyCommutation(0, 10.0f);
+  HAL_Delay(500); // Let motor settle in position
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -134,10 +134,19 @@ int main(void)
       Motor_Disable();
       printf("Fault detected on DRV8313\r\n");
       HAL_Delay(1000); // Prevents flooding of printf messages
+      continue; // Skip the rest of the loop and check for fault again
+   }
+  
+    uint16_t settled; // temp buffer to hold the settled angle read from the AS5600
+    if (AS5600_ReadAngle(&settled) == HAL_OK) {
+        printf("Settled angle: %u\r\n", settled);
+    } else {
+        printf("Error reading angle from AS5600\r\n");
     }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    HAL_Delay(500);
   }
   /* USER CODE END 3 */
 }
