@@ -8,6 +8,10 @@
 // Any of the other 6 detents could also be used
 #define OFFSET 1018
 
+// Larger minimums increase the change in encoder counts measured so an error of +/-1 has less impact on RPM
+// Lag also increases because speed can't be reported until the window is finished
+#define DT_US_MIN 2000
+
 static uint16_t previousAngle = 0;
 static uint32_t previousTick = 0;
 static float filteredRPM = 0.0f;
@@ -18,7 +22,7 @@ static uint16_t commutationSector = 0;
 void Encoder_Initialize(uint16_t currentAngle)
 {
     previousAngle = currentAngle;
-    previousTick = HAL_GetTick();
+    previousTick = __HAL_TIM_GET_COUNTER(&htim2); // Uses microsecond timebase instead of HAL_GetTick() for more precise time measurements
 }
 
 // See encoder.h for function documentation
@@ -34,9 +38,9 @@ void Encoder_Update(uint16_t currentAngle)
         deltaAngle = deltaAngle + 4096;
     }
 
-    // Calculates dt in Ms for rawRPM calculation
-    uint32_t currentTick = HAL_GetTick();
-    uint32_t dtMs = currentTick - previousTick;
+    // Calculates dt in microseconds (Us) for rawRPM calculation
+    uint32_t currentTick = __HAL_TIM_GET_COUNTER(&htim2);
+    uint32_t dtUs = currentTick - previousTick;
 
     // Calculates electrical angle
     int16_t offsetAngle = currentAngle - OFFSET; // Temp variable to hold the offset angle before converting to electrical angle
@@ -49,17 +53,17 @@ void Encoder_Update(uint16_t currentAngle)
     // Determines commutation sector index
     commutationSector = electricalAngle / 683; // Divides the electricalAngle by 683 (approx. 1/6th of 4096)
 
-    // Accounts for division by zero in rawRPM calculation while not skipping commutationSector and electricalAngle calculations
-    if (dtMs == 0) {
-        return; // Skip RPM calculation for this tick and return the last updated filteredRPM value
+    // Ensures that RPM is captured across a larger window so error is measured against a larger deltaAngle
+    if (dtUs < DT_US_MIN) {
+        return; // Skip RPM calculation when dt is below DT_US_MIN
     }
 
-    // Skipped when dt == 0 so the full angle and tick movement can be captured when dt > 0
+    // Skipped when dt < DT_US_MIN so the full angle movement and change in time can be captured (calculated in the next iteration)
     previousAngle = currentAngle; 
     previousTick = currentTick;
 
     // Calculates RPM
-    float rawRPM = (deltaAngle / 4096.0f) / dtMs * 60000;
+    float rawRPM = (deltaAngle / 4096.0f) / dtUs * 60000000;
 
     // Low-pass filter for RPM
     filteredRPM = ALPHA * rawRPM + (1 - ALPHA) * filteredRPM;

@@ -98,7 +98,10 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  // Clears I2C1 busy state caused by a mid-transaction reset
+  __HAL_RCC_I2C1_FORCE_RESET();
+  HAL_Delay(2);
+  __HAL_RCC_I2C1_RELEASE_RESET();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -107,7 +110,11 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM1_Init();
   MX_USART3_UART_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+
+  HAL_TIM_Base_Start(&htim2);
+  HAL_Delay(100); 
 
   // Temporary debug code
   uint16_t angle;
@@ -173,7 +180,9 @@ int main(void)
       }
 
     }
+    /* USER CODE END WHILE */
 
+    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
