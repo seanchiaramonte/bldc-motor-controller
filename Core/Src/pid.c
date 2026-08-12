@@ -6,13 +6,14 @@ void PID_Initialize(PID_t *speedPID)
     // Placeholder values
     speedPID->kp = 0.2f;
     speedPID->ki = 0.2f;
-    speedPID->kd = 0.2f;
+    speedPID->kd = 0.0f;
     speedPID->integral = 0.0f;
     speedPID->previousRPM = 0.0f;
-    speedPID->integralMin = 0.0f;
+    speedPID->integralMin = -100.0f; // Allows for wind-down during overshoots
     speedPID->integralMax = 100.0f;
     speedPID->outputMin = 0.0f;
     speedPID->outputMax = 100.0f;
+    speedPID->previousOutput = 0.0f;
 
     return;
 }
@@ -22,6 +23,7 @@ void PID_Reset(PID_t *speedPID)
 {
     speedPID->integral = 0.0f;
     speedPID->previousRPM = 0.0f;
+    speedPID->previousOutput = 0.0f;
 
     return;
 }
@@ -29,10 +31,10 @@ void PID_Reset(PID_t *speedPID)
 // See pid.h for function documentation
 float PID_Update(PID_t *speedPID, float targetRPM, float actualRPM, float dt)
 {
-    // Accounts for derivative division by zero or negative values
+    // Accounts for non-positive dt which shouldn't be possible in normal operation
     if 
     (dt <= 0.0f) {
-        return 0.0f; // Returns 0.0f if dt is zero or negative
+        return speedPID->previousOutput; // Returns previous output if time glitch occurs
     }
 
     // Calculates error
@@ -67,6 +69,8 @@ float PID_Update(PID_t *speedPID, float targetRPM, float actualRPM, float dt)
     if (finalPID < speedPID->outputMin) {
         finalPID = speedPID->outputMin;
     }
+
+    speedPID->previousOutput = finalPID; // Assigns previousOutput so the dt guard can return the last duty cycle
 
     return finalPID;
 }

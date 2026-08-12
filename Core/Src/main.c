@@ -43,7 +43,7 @@
 /* USER CODE BEGIN PD */
 // Temporary definitions
 #define LEAD 2 // Starts at 120 degrees and decays to 60 degrees as rotor sweeps through sector (average 90 degrees)
-#define DUTY 12.0f // Low test duty cycle to ensure motor rotates smoothly
+#define TARGET 250
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -124,10 +124,13 @@ int main(void)
     printf("Angle Read Error:%d\r\n", status);
     Error_Handler();
   }
+  PID_t speedPID; // Declares speedPID variable of the PID_t type
   Encoder_Initialize(angle);
   Motor_Initialize();
   Motor_Enable();
-
+  PID_Initialize(&speedPID);
+  uint32_t currentPidTick = 0;
+  uint32_t previousPidTick = __HAL_TIM_GET_COUNTER(&htim2); //Initializes previousPidTick to include runtime since HAL_TIM_Base_Start and 100ms delay
 
   /* USER CODE END 2 */
 
@@ -162,21 +165,31 @@ int main(void)
 
       Encoder_Update(angle);
 
+      // New variables because variables are static in encoder.c  
+      float RPM = Encoder_GetRPM();
+      uint16_t eAngle = Encoder_GetElectricalAngle();
+      uint16_t sector = Encoder_GetSector();
+
+      currentPidTick = __HAL_TIM_GET_COUNTER(&htim2);
+      float dt = (currentPidTick - previousPidTick) / 1000000.0f;
+
+      float dutyCycle;
+      dutyCycle = PID_Update(&speedPID, TARGET, RPM, dt);
+
       // Wraps sector because adding LEAD can produce out of bounds values like 6 or 7
-      Motor_ApplyCommutation(((Encoder_GetSector() + LEAD) % 6), DUTY);
+      Motor_ApplyCommutation(((Encoder_GetSector() + LEAD) % 6), dutyCycle);
+
+      // Sets previousTimeValue for next iteration's dt calculation
+      previousPidTick = currentPidTick;
 
       static uint32_t lastPrint = 0;
         if (HAL_GetTick() - lastPrint >= 200) { // 200 ms is a clean and readable rate to print at
           lastPrint = HAL_GetTick();
-
-        // New variables because variables are static in encoder.c  
-        float RPM = Encoder_GetRPM();
-        uint16_t eAngle = Encoder_GetElectricalAngle();
-        uint16_t sector = Encoder_GetSector();
       
-        char buffer[70]; // Array size comfortably fits above the worst case scenario of approx. 45 characters
-        int len = sprintf(buffer, "angle=%u eAngle=%u sector=%u RPM=%.1f\r\n", angle, eAngle, sector, RPM);
+        char buffer[100]; // Array size comfortably fits above the worst case scenario of approx. 75 characters
+        int len = sprintf(buffer, "angle=%u eAngle=%u sector=%u RPM=%.1f TARGET=%u, dutyCycle=%.1f\r\n", angle, eAngle, sector, RPM, TARGET, dutyCycle);
         HAL_UART_Transmit(&huart2, (uint8_t *)buffer, len, HAL_MAX_DELAY);
+        
       }
 
     }
