@@ -41,7 +41,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+// Temporary definitions
+#define LEAD 2 // Starts at 120 degrees and decays to 60 degrees as rotor sweeps through sector (average 90 degrees)
+#define DUTY 12.0f // Low test duty cycle to ensure motor rotates smoothly
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -108,12 +110,18 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   // Temporary debug code
+  uint16_t angle;
+  HAL_StatusTypeDef status = AS5600_ReadAngle(&angle);
+ 
+  if (status != HAL_OK) {
+    printf("Angle Read Error:%d\r\n", status);
+    Error_Handler();
+  }
+  Encoder_Initialize(angle);
   Motor_Initialize();
-  HAL_Delay(100);
   Motor_Enable();
-  HAL_Delay(100);
-  Motor_ApplyCommutation(0, 10.0f);
-  HAL_Delay(500); // Let motor settle in position
+
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -129,24 +137,43 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-   // Temporary debug code
-   if (Motor_CheckFault()) {
+    // Temporary debug code
+    if (Motor_CheckFault()) {
       Motor_Disable();
-      printf("Fault detected on DRV8313\r\n");
-      HAL_Delay(1000); // Prevents flooding of printf messages
-      continue; // Skip the rest of the loop and check for fault again
-   }
-  
-    uint16_t settled; // temp buffer to hold the settled angle read from the AS5600
-    if (AS5600_ReadAngle(&settled) == HAL_OK) {
-        printf("Settled angle: %u\r\n", settled);
-    } else {
-        printf("Error reading angle from AS5600\r\n");
+      printf("Motor Fault Detected!\r\n");
+      HAL_Delay(1000); // Prevents printf flooding
+      continue; // Jumps to next iteration
     }
-    /* USER CODE END WHILE */
+   
+   status = AS5600_ReadAngle(&angle);
+    if (status != HAL_OK) {
+      Motor_Disable();
+      printf("Angle Read Error:%d\r\n", status);
+      HAL_Delay(1000); // Prevents printf flooding
+      continue; // Jumps to next iteration
+    } else if (status == HAL_OK) {
 
-    /* USER CODE BEGIN 3 */
-    HAL_Delay(500);
+      Encoder_Update(angle);
+
+      // Wraps sector because adding LEAD can produce out of bounds values like 6 or 7
+      Motor_ApplyCommutation(((Encoder_GetSector() + LEAD) % 6), DUTY);
+
+      static uint32_t lastPrint = 0;
+        if (HAL_GetTick() - lastPrint >= 200) { // 200 ms is a clean and readable rate to print at
+          lastPrint = HAL_GetTick();
+
+        // New variables because variables are static in encoder.c  
+        float RPM = Encoder_GetRPM();
+        uint16_t eAngle = Encoder_GetElectricalAngle();
+        uint16_t sector = Encoder_GetSector();
+      
+        char buffer[70]; // Array size comfortably fits above the worst case scenario of approx. 45 characters
+        int len = sprintf(buffer, "angle=%u eAngle=%u sector=%u RPM=%.1f\r\n", angle, eAngle, sector, RPM);
+        HAL_UART_Transmit(&huart2, (uint8_t *)buffer, len, HAL_MAX_DELAY);
+      }
+
+    }
+
   }
   /* USER CODE END 3 */
 }
