@@ -30,7 +30,7 @@
   * @brief Sets initial speedPID struct values for kp, ki, kd, integralMin, integralMax, and outputMax, zeroing others.
   * 
   * @details 
-  * Initialized kp to 0.2, ki to 0.2, kd to 0.0, integralMin to -100.0, integralMax to 100.0, outputMax to 100.0, and
+  * Initialized kp to 0.4, ki to 0.25, kd to 0.0, integralMin to -100.0, integralMax to 100.0, outputMax to 100.0, and
   * zeroes the integral, previousRPM, outputMin and previousOutput values. Function is called once at boot.
   * 
   * @param speedPID Passes a pointer to the speedPID struct with the PID_t type.

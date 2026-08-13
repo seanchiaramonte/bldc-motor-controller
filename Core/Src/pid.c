@@ -3,10 +3,10 @@
 // See pid.h for function documentation
 void PID_Initialize(PID_t *speedPID)
 {
-    // Placeholder values
-    speedPID->kp = 0.2f;
-    speedPID->ki = 0.2f;
-    speedPID->kd = 0.0f;
+    // Tuned by observing RPM and duty ripple in CoolTerm
+    speedPID->kp = 0.4f; // Half the 0.8 ceiling (where RPM overshoots and duty shoots to 0) which gives ample room for load changes
+    speedPID->ki = 0.25f; // Reduces steady state error, holding ~+/-3 RPM around target
+    speedPID->kd = 0.0f; // No kd term yet because overshoot is not significant
     speedPID->integral = 0.0f;
     speedPID->previousRPM = 0.0f;
     speedPID->integralMin = -100.0f; // Allows for wind-down during overshoots
