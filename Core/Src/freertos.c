@@ -36,6 +36,7 @@
 
 volatile float targetRPM = 250; // Temp value for debugging
 volatile float actualRPM; // Global RPM variable accessible by all tasks
+volatile float current; // mA
 volatile uint16_t motorEN = 1; // Set by bluetoothTask
 volatile uint16_t systemFault; // Set by monitorTask
 
@@ -51,6 +52,9 @@ volatile uint16_t systemFault; // Set by monitorTask
 // Temporary definitions
 #define LEAD 2 // Starts at 120 degrees and decays to 60 degrees as rotor sweeps through sector (average 90 degrees)
 
+// 700 mA fault threshold
+// Below 819 mA, the max current the INA226 can measure and above the amount of current that the motor usually draws
+#define OVERCURRENT 700.0f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -208,8 +212,8 @@ void StartMotorTask(void *argument)
     if (status != HAL_OK) {
       Motor_Disable();
       printf("Angle Read Error:%d\r\n", status);
-      nextWake = nextWake + 1; // increases the nextWake value by one tick
-      osDelayUntil(nextWake); // motorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task run every ms
+      nextWake = nextWake + 1; // Increases the nextWake value by one tick
+      osDelayUntil(nextWake); // motorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task to run every ms
       continue; // Jumps to next loop iteration
     } else if (status == HAL_OK) {
 
@@ -235,8 +239,8 @@ void StartMotorTask(void *argument)
       previousPidTick = currentPidTick;
       }
 
-      nextWake = nextWake + 1; // increases the nextWake value by one tick
-      osDelayUntil(nextWake); // motorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task run every ms
+      nextWake = nextWake + 1; // Increases the nextWake value by one tick
+      osDelayUntil(nextWake); // motorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task to run every ms
   }
   /* USER CODE END StartMotorTask */
 }
@@ -251,10 +255,57 @@ void StartMotorTask(void *argument)
 void StartMonitorTask(void *argument)
 {
   /* USER CODE BEGIN StartMonitorTask */
+  float localCurrent;
+  HAL_StatusTypeDef status = INA226_Initialize();
+
+  if (status != HAL_OK) {
+    printf("Current Initialization Error:%d\r\n", status);
+    
+    osMutexAcquire(motorStateMutexHandle, osWaitForever);
+    systemFault = 1;
+    motorEN = 0;
+    osMutexRelease(motorStateMutexHandle);
+  }
+
+  TickType_t nextWake = osKernelGetTickCount();
+
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    status = INA226_ReadCurrent(&localCurrent);
+    
+    if (status != HAL_OK) {
+      Motor_Disable();
+      printf("Current Read Failure:%d\r\n", status);
+      nextWake = nextWake + 10; // Increases the nextWake value by ten ticks
+      osDelayUntil(nextWake); // monitorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task run every 10 ms
+      continue; // Jumps to next loop iteration
+    } else if (status == HAL_OK) {
+
+      osMutexAcquire(motorStateMutexHandle, osWaitForever); // Wait forever until mutex is available to assign these variables
+      current = localCurrent; // Updating the global current variable for use by other tasks
+      osMutexRelease(motorStateMutexHandle); // Releases the mutex so it can be used by the next task
+
+      if (localCurrent > OVERCURRENT) {
+        printf("Current exceeds limit:%.1f\r\n", localCurrent);
+
+        osMutexAcquire(motorStateMutexHandle, osWaitForever);
+        systemFault = 1;
+        motorEN = 0;
+        osMutexRelease(motorStateMutexHandle);
+      } 
+    
+      if (Motor_CheckFault()) {
+        printf("Motor Fault\r\n");
+
+        osMutexAcquire(motorStateMutexHandle, osWaitForever);
+        systemFault = 1;
+        motorEN = 0;
+        osMutexRelease(motorStateMutexHandle);
+      }
+    }
+      nextWake = nextWake + 10; // Increases the nextWake value by 10 ticks
+      osDelayUntil(nextWake); // monitorTask sleeps until the freeRTOS counter reaches the next tenth tick, effectively scheduling the task to run every 10 ms
   }
   /* USER CODE END StartMonitorTask */
 }
