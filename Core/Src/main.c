@@ -26,9 +26,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "as5600.h"
-#include "encoder.h"
-#include "pid.h"
 #include "motor.h"
 #include <stdio.h>
 #include <string.h>
@@ -41,9 +38,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-// Temporary definitions
-#define LEAD 2 // Starts at 120 degrees and decays to 60 degrees as rotor sweeps through sector (average 90 degrees)
-#define TARGET 250
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -114,23 +109,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   HAL_TIM_Base_Start(&htim2);
-  HAL_Delay(100); 
-
-  // Temporary debug code
-  uint16_t angle;
-  HAL_StatusTypeDef status = AS5600_ReadAngle(&angle);
- 
-  if (status != HAL_OK) {
-    printf("Angle Read Error:%d\r\n", status);
-    Error_Handler();
-  }
-  PID_t speedPID; // Declares speedPID variable of the PID_t type
-  Encoder_Initialize(angle);
-  Motor_Initialize();
-  Motor_Enable();
-  PID_Initialize(&speedPID);
-  uint32_t currentPidTick = 0;
-  uint32_t previousPidTick = __HAL_TIM_GET_COUNTER(&htim2); //Initializes previousPidTick to include runtime since HAL_TIM_Base_Start and 100ms delay
 
   /* USER CODE END 2 */
 
@@ -147,52 +125,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // Temporary debug code
-    if (Motor_CheckFault()) {
-      Motor_Disable();
-      printf("Motor Fault Detected!\r\n");
-      HAL_Delay(1000); // Prevents printf flooding
-      continue; // Jumps to next iteration
-    }
-   
-   status = AS5600_ReadAngle(&angle);
-    if (status != HAL_OK) {
-      Motor_Disable();
-      printf("Angle Read Error:%d\r\n", status);
-      HAL_Delay(1000); // Prevents printf flooding
-      continue; // Jumps to next iteration
-    } else if (status == HAL_OK) {
-
-      Encoder_Update(angle);
-
-      // New variables because variables are static in encoder.c  
-      float RPM = Encoder_GetRPM();
-      uint16_t eAngle = Encoder_GetElectricalAngle();
-      uint16_t sector = Encoder_GetSector();
-
-      currentPidTick = __HAL_TIM_GET_COUNTER(&htim2);
-      float dt = (currentPidTick - previousPidTick) / 1000000.0f;
-
-      float dutyCycle;
-      dutyCycle = PID_Update(&speedPID, TARGET, RPM, dt);
-
-      // Wraps sector because adding LEAD can produce out of bounds values like 6 or 7
-      Motor_ApplyCommutation(((Encoder_GetSector() + LEAD) % 6), dutyCycle);
-
-      // Sets previousTimeValue for next iteration's dt calculation
-      previousPidTick = currentPidTick;
-
-      static uint32_t lastPrint = 0;
-        if (HAL_GetTick() - lastPrint >= 200) { // 200 ms is a clean and readable rate to print at
-          lastPrint = HAL_GetTick();
-      
-        char buffer[100]; // Array size comfortably fits above the worst case scenario of approx. 75 characters
-        int len = sprintf(buffer, "angle=%u eAngle=%u sector=%u RPM=%.1f TARGET=%u, dutyCycle=%.1f\r\n", angle, eAngle, sector, RPM, TARGET, dutyCycle);
-        HAL_UART_Transmit(&huart2, (uint8_t *)buffer, len, HAL_MAX_DELAY);
-        
-      }
-
-    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

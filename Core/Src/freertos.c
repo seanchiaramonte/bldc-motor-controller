@@ -25,6 +25,19 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "as5600.h"
+#include "encoder.h"
+#include "pid.h"
+#include "motor.h"
+#include "ina226.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+
+volatile float targetRPM = 250; // Temp value for debugging
+volatile float actualRPM; // Global RPM variable accessible by all tasks
+volatile uint16_t motorEN = 1; // Set by bluetoothTask
+volatile uint16_t systemFault; // Set by monitorTask
 
 /* USER CODE END Includes */
 
@@ -35,6 +48,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+// Temporary definitions
+#define LEAD 2 // Starts at 120 degrees and decays to 60 degrees as rotor sweeps through sector (average 90 degrees)
 
 /* USER CODE END PD */
 
@@ -155,10 +170,73 @@ void MX_FREERTOS_Init(void) {
 void StartMotorTask(void *argument)
 {
   /* USER CODE BEGIN StartMotorTask */
+   uint16_t angle;
+   HAL_StatusTypeDef status = AS5600_ReadAngle(&angle);
+
+  PID_t speedPID; // Declares speedPID variable of the PID_t type
+  Encoder_Initialize(angle);
+  Motor_Initialize();
+  Motor_Enable();
+  PID_Initialize(&speedPID);
+
+  uint32_t currentPidTick = 0;
+  uint32_t previousPidTick = __HAL_TIM_GET_COUNTER(&htim2); //Initializes previousPidTick to include runtime since HAL_TIM_Base_Start
+
+  // Initializes nextWake to the current tick 
+  // Each loop iteration advances nextWake by one and sleeps until systick reaches nextWake, scheduling the task to run every 1ms
+  TickType_t nextWake = osKernelGetTickCount(); // osKernelGetTickCount() gets the number of ticks (configured to 1 ms per tick) since boot
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    osMutexAcquire(motorStateMutexHandle, osWaitForever); // Wait forever until mutex is available to assign these variables
+    float mutexTargetRPM = targetRPM; // Copies targetRPM while holding its mutex so the rest of the loop uses an unchanging value instead of trying to read the global targetRPM that another task may be writing
+    uint16_t mutexEN = motorEN;
+    uint16_t mutexFault = systemFault;
+    osMutexRelease(motorStateMutexHandle); // Releases the mutex so it can be used by the next task
+
+    if (!mutexEN || mutexFault) {
+      Motor_Disable();
+      PID_Reset(&speedPID); // Zeros values in PID struct so that integral does not continue accumulating
+      nextWake = nextWake + 1; // Increases the nextWake value by one tick
+      osDelayUntil(nextWake); // motorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task to run every ms
+      continue; // Jumps to the next loop iteration
+    }
+
+    Motor_Enable(); // Ensures EN is high after a fault that may have pulled it low with Motor_Disable()
+
+    status = AS5600_ReadAngle(&angle);
+    if (status != HAL_OK) {
+      Motor_Disable();
+      printf("Angle Read Error:%d\r\n", status);
+      nextWake = nextWake + 1; // increases the nextWake value by one tick
+      osDelayUntil(nextWake); // motorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task run every ms
+      continue; // Jumps to next loop iteration
+    } else if (status == HAL_OK) {
+
+      Encoder_Update(angle);
+
+      // New RPM variable used in PID_Update and to update actualRPM 
+      float RPM = Encoder_GetRPM();
+
+      osMutexAcquire(motorStateMutexHandle, osWaitForever);
+      actualRPM = RPM; // Updating actualRPM for use by other tasks
+      osMutexRelease(motorStateMutexHandle);
+
+      currentPidTick = __HAL_TIM_GET_COUNTER(&htim2);
+      float dt = (currentPidTick - previousPidTick) / 1000000.0f; // Measures dt in seconds
+
+      float dutyCycle;
+      dutyCycle = PID_Update(&speedPID, mutexTargetRPM, RPM, dt);
+
+      // Wraps sector because adding LEAD can produce out of bounds values like 6 or 7
+      Motor_ApplyCommutation(((Encoder_GetSector() + LEAD) % 6), dutyCycle);
+
+      // Sets previousPidTick for next iteration's dt calculation
+      previousPidTick = currentPidTick;
+      }
+
+      nextWake = nextWake + 1; // increases the nextWake value by one tick
+      osDelayUntil(nextWake); // motorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task run every ms
   }
   /* USER CODE END StartMotorTask */
 }
