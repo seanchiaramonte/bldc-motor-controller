@@ -30,6 +30,7 @@
 #include "pid.h"
 #include "motor.h"
 #include "ina226.h"
+#include "bluetooth.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -320,10 +321,17 @@ void StartMonitorTask(void *argument)
 void StartBluetoothTask(void *argument)
 {
   /* USER CODE BEGIN StartBluetoothTask */
+  Bluetooth_Initialize();
+  
+  TickType_t nextWake = osKernelGetTickCount();
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    Bluetooth_Update();
+
+    nextWake = nextWake + 20; // Increases the nextWake value by 20 ticks
+    osDelayUntil(nextWake);
+
   }
   /* USER CODE END StartBluetoothTask */
 }
