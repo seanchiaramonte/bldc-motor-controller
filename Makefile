@@ -63,6 +63,8 @@ Core/Src/as5600.c \
 Core/Src/encoder.c \
 Core/Src/pid.c \
 Core/Src/motor.c \
+Core/Src/ina226.c \
+Core/Src/bluetooth.c \
 Core/Src/tim.c \
 Core/Src/usart.c \
 Core/Src/stm32f4xx_hal_timebase_tim.c \
