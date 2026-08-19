@@ -65,6 +65,8 @@ Core/Src/pid.c \
 Core/Src/motor.c \
 Core/Src/ina226.c \
 Core/Src/bluetooth.c \
+Core/Src/ssd1306.c \
+Core/Src/ssd1306_fonts.c \
 Core/Src/tim.c \
 Core/Src/usart.c \
 Core/Src/stm32f4xx_hal_timebase_tim.c \
