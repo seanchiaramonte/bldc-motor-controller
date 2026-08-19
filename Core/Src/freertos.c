@@ -95,10 +95,15 @@ const osThreadAttr_t displayTask_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityBelowNormal,
 };
-/* Definitions for motorStateMutex */
-osMutexId_t motorStateMutexHandle;
-const osMutexAttr_t motorStateMutex_attributes = {
-  .name = "motorStateMutex"
+/* Definitions for sharedDataMutex */
+osMutexId_t sharedDataMutexHandle;
+const osMutexAttr_t sharedDataMutex_attributes = {
+  .name = "sharedDataMutex"
+};
+/* Definitions for i2cMutex */
+osMutexId_t i2cMutexHandle;
+const osMutexAttr_t i2cMutex_attributes = {
+  .name = "i2cMutex"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -123,8 +128,11 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE END Init */
   /* Create the mutex(es) */
-  /* creation of motorStateMutex */
-  motorStateMutexHandle = osMutexNew(&motorStateMutex_attributes);
+  /* creation of sharedDataMutex */
+  sharedDataMutexHandle = osMutexNew(&sharedDataMutex_attributes);
+
+  /* creation of i2cMutex */
+  i2cMutexHandle = osMutexNew(&i2cMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -175,8 +183,11 @@ void MX_FREERTOS_Init(void) {
 void StartMotorTask(void *argument)
 {
   /* USER CODE BEGIN StartMotorTask */
-   uint16_t angle;
-   HAL_StatusTypeDef status = AS5600_ReadAngle(&angle);
+  uint16_t angle;
+
+  osMutexAcquire(i2cMutexHandle, osWaitForever);
+  HAL_StatusTypeDef status = AS5600_ReadAngle(&angle);
+  osMutexRelease(i2cMutexHandle);
 
   PID_t speedPID; // Declares speedPID variable of the PID_t type
   Encoder_Initialize(angle);
@@ -193,11 +204,11 @@ void StartMotorTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osMutexAcquire(motorStateMutexHandle, osWaitForever); // Wait forever until mutex is available to assign these variables
+    osMutexAcquire(sharedDataMutexHandle, osWaitForever); // Wait forever until mutex is available to assign these variables
     float mutexTargetRPM = targetRPM; // Copies targetRPM while holding its mutex so the rest of the loop uses an unchanging value instead of trying to read the global targetRPM that another task may be writing
     uint16_t mutexEN = motorEN;
     uint16_t mutexFault = systemFault;
-    osMutexRelease(motorStateMutexHandle); // Releases the mutex so it can be used by the next task
+    osMutexRelease(sharedDataMutexHandle); // Releases the mutex so it can be used by the next task
 
     if (!mutexEN || mutexFault) {
       Motor_Disable();
@@ -209,7 +220,10 @@ void StartMotorTask(void *argument)
 
     Motor_Enable(); // Ensures EN is high after a fault that may have pulled it low with Motor_Disable()
 
+    osMutexAcquire(i2cMutexHandle, osWaitForever);
     status = AS5600_ReadAngle(&angle);
+    osMutexRelease(i2cMutexHandle);
+
     if (status != HAL_OK) {
       Motor_Disable();
       printf("Angle Read Error:%d\r\n", status);
@@ -224,9 +238,9 @@ void StartMotorTask(void *argument)
       // New RPM variable used in PID_Update and to update actualRPM 
       float RPM = Encoder_GetRPM();
 
-      osMutexAcquire(motorStateMutexHandle, osWaitForever);
+      osMutexAcquire(sharedDataMutexHandle, osWaitForever);
       actualRPM = RPM; // Updating actualRPM for use by other tasks
-      osMutexRelease(motorStateMutexHandle);
+      osMutexRelease(sharedDataMutexHandle);
 
       currentPidTick = __HAL_TIM_GET_COUNTER(&htim2);
       float dt = (currentPidTick - previousPidTick) / 1000000.0f; // Measures dt in seconds
@@ -258,15 +272,18 @@ void StartMonitorTask(void *argument)
 {
   /* USER CODE BEGIN StartMonitorTask */
   float localCurrent;
+
+  osMutexAcquire(i2cMutexHandle, osWaitForever);
   HAL_StatusTypeDef status = INA226_Initialize();
+  osMutexRelease(i2cMutexHandle);
 
   if (status != HAL_OK) {
     printf("Current Initialization Error:%d\r\n", status);
     
-    osMutexAcquire(motorStateMutexHandle, osWaitForever);
+    osMutexAcquire(sharedDataMutexHandle, osWaitForever);
     systemFault = 1;
     motorEN = 0;
-    osMutexRelease(motorStateMutexHandle);
+    osMutexRelease(sharedDataMutexHandle);
   }
 
   TickType_t nextWake = osKernelGetTickCount();
@@ -274,7 +291,9 @@ void StartMonitorTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
+    osMutexAcquire(i2cMutexHandle, osWaitForever);
     status = INA226_ReadCurrent(&localCurrent);
+    osMutexRelease(i2cMutexHandle);
     
     if (status != HAL_OK) {
       Motor_Disable();
@@ -284,26 +303,26 @@ void StartMonitorTask(void *argument)
       continue; // Jumps to next loop iteration
     } else if (status == HAL_OK) {
 
-      osMutexAcquire(motorStateMutexHandle, osWaitForever); // Wait forever until mutex is available to assign these variables
+      osMutexAcquire(sharedDataMutexHandle, osWaitForever); // Wait forever until mutex is available to assign these variables
       current = localCurrent; // Updating the global current variable for use by other tasks
-      osMutexRelease(motorStateMutexHandle); // Releases the mutex so it can be used by the next task
+      osMutexRelease(sharedDataMutexHandle); // Releases the mutex so it can be used by the next task
 
       if (localCurrent > OVERCURRENT) {
         printf("Current exceeds limit:%.1f\r\n", localCurrent);
 
-        osMutexAcquire(motorStateMutexHandle, osWaitForever);
+        osMutexAcquire(sharedDataMutexHandle, osWaitForever);
         systemFault = 1;
         motorEN = 0;
-        osMutexRelease(motorStateMutexHandle);
+        osMutexRelease(sharedDataMutexHandle);
       } 
     
       if (Motor_CheckFault()) {
         printf("Motor Fault\r\n");
 
-        osMutexAcquire(motorStateMutexHandle, osWaitForever);
+        osMutexAcquire(sharedDataMutexHandle, osWaitForever);
         systemFault = 1;
         motorEN = 0;
-        osMutexRelease(motorStateMutexHandle);
+        osMutexRelease(sharedDataMutexHandle);
       }
     }
       nextWake = nextWake + 10; // Increases the nextWake value by 10 ticks
@@ -332,20 +351,20 @@ void StartBluetoothTask(void *argument)
     BluetoothCommand_t command = Bluetooth_Update(&rpm);
 
     if (command == Bluetooth_RPM) {
-        osMutexAcquire(motorStateMutexHandle, osWaitForever);
+        osMutexAcquire(sharedDataMutexHandle, osWaitForever);
         targetRPM = rpm; 
-        osMutexRelease(motorStateMutexHandle);
+        osMutexRelease(sharedDataMutexHandle);
         
     } else if (command == Bluetooth_Start) { // If Python app sends START
-        osMutexAcquire(motorStateMutexHandle, osWaitForever);
+        osMutexAcquire(sharedDataMutexHandle, osWaitForever);
         motorEN = 1;
         systemFault = 0;
-        osMutexRelease(motorStateMutexHandle);
+        osMutexRelease(sharedDataMutexHandle);
 
     } else if (command == Bluetooth_Stop) { // If Python app sends STOP
-        osMutexAcquire(motorStateMutexHandle, osWaitForever);
+        osMutexAcquire(sharedDataMutexHandle, osWaitForever);
         motorEN = 0;
-        osMutexRelease(motorStateMutexHandle);
+        osMutexRelease(sharedDataMutexHandle);
     }  
     nextWake = nextWake + 20; // Increases the nextWake value by 20 ticks
     osDelayUntil(nextWake); // bluetoothTask sleeps until 20 ticks after the last wake, effectively scheduling the task to run every 20 ms
@@ -376,4 +395,3 @@ void StartDisplayTask(void *argument)
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
-
