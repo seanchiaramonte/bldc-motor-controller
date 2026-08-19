@@ -203,7 +203,7 @@ void StartMotorTask(void *argument)
       Motor_Disable();
       PID_Reset(&speedPID); // Zeros values in PID struct so that integral does not continue accumulating
       nextWake = nextWake + 1; // Increases the nextWake value by one tick
-      osDelayUntil(nextWake); // motorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task to run every ms
+      osDelayUntil(nextWake); // motorTask sleeps until one tick after the last wake, effectively scheduling the task to run every ms
       continue; // Jumps to the next loop iteration
     }
 
@@ -214,8 +214,9 @@ void StartMotorTask(void *argument)
       Motor_Disable();
       printf("Angle Read Error:%d\r\n", status);
       nextWake = nextWake + 1; // Increases the nextWake value by one tick
-      osDelayUntil(nextWake); // motorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task to run every ms
+      osDelayUntil(nextWake); // motorTask sleeps until one tick after the last wake, effectively scheduling the task to run every ms
       continue; // Jumps to next loop iteration
+
     } else if (status == HAL_OK) {
 
       Encoder_Update(angle);
@@ -241,7 +242,7 @@ void StartMotorTask(void *argument)
       }
 
       nextWake = nextWake + 1; // Increases the nextWake value by one tick
-      osDelayUntil(nextWake); // motorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task to run every ms
+      osDelayUntil(nextWake); // motorTask sleeps until one tick after the last wake, effectively scheduling the task to run every ms
   }
   /* USER CODE END StartMotorTask */
 }
@@ -278,8 +279,8 @@ void StartMonitorTask(void *argument)
     if (status != HAL_OK) {
       Motor_Disable();
       printf("Current Read Failure:%d\r\n", status);
-      nextWake = nextWake + 10; // Increases the nextWake value by ten ticks
-      osDelayUntil(nextWake); // monitorTask sleeps until the freeRTOS counter reaches the next tick, effectively scheduling the task run every 10 ms
+      nextWake = nextWake + 10; // Increases the nextWake value by 10 ticks
+      osDelayUntil(nextWake); // monitorTask sleeps until 10 ticks after the last wake, effectively scheduling the task to run every 10 ms
       continue; // Jumps to next loop iteration
     } else if (status == HAL_OK) {
 
@@ -306,7 +307,7 @@ void StartMonitorTask(void *argument)
       }
     }
       nextWake = nextWake + 10; // Increases the nextWake value by 10 ticks
-      osDelayUntil(nextWake); // monitorTask sleeps until the freeRTOS counter reaches the next tenth tick, effectively scheduling the task to run every 10 ms
+      osDelayUntil(nextWake); // monitorTask sleeps until 10 ticks after the last wake, effectively scheduling the task to run every 10 ms
   }
   /* USER CODE END StartMonitorTask */
 }
@@ -327,10 +328,27 @@ void StartBluetoothTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    Bluetooth_Update();
+    float rpm;
+    BluetoothCommand_t command = Bluetooth_Update(&rpm);
 
+    if (command == Bluetooth_RPM) {
+        osMutexAcquire(motorStateMutexHandle, osWaitForever);
+        targetRPM = rpm; 
+        osMutexRelease(motorStateMutexHandle);
+        
+    } else if (command == Bluetooth_Start) { // If Python app sends START
+        osMutexAcquire(motorStateMutexHandle, osWaitForever);
+        motorEN = 1;
+        systemFault = 0;
+        osMutexRelease(motorStateMutexHandle);
+
+    } else if (command == Bluetooth_Stop) { // If Python app sends STOP
+        osMutexAcquire(motorStateMutexHandle, osWaitForever);
+        motorEN = 0;
+        osMutexRelease(motorStateMutexHandle);
+    }  
     nextWake = nextWake + 20; // Increases the nextWake value by 20 ticks
-    osDelayUntil(nextWake);
+    osDelayUntil(nextWake); // bluetoothTask sleeps until 20 ticks after the last wake, effectively scheduling the task to run every 20 ms
 
   }
   /* USER CODE END StartBluetoothTask */

@@ -7,6 +7,21 @@
 #include "usart.h"
 #include "cmsis_os.h"
 
+/**
+ * @brief Holds the values that the Bluetooth task will receive and act on.
+ * 
+ * @details 
+ * Bluetooth_None indicates that no command is pending or that a command is invalid. Bluetooth_RPM indicates an RPM value 
+ * so the rpm output parameter can be assigned to targetRPM in the Bluetooth task. Bluetooth_Start enables the motor and 
+ * clears a fault in the Bluetooth task. Bluetooth_Stop disables the motor in the Bluetooth task.
+ */
+typedef enum {
+    Bluetooth_None, 
+    Bluetooth_RPM, 
+    Bluetooth_Start, 
+    Bluetooth_Stop, 
+} BluetoothCommand_t;
+
 /** 
  * @brief Arms the interrupt for one byte and returns immediately.
  * 
@@ -24,15 +39,24 @@ HAL_StatusTypeDef Bluetooth_Initialize(void);
 // It's already declared in stm32f4xx_hal_uart.h and it's only ever called by HAL
 
 /** 
- * @brief Reads and handles an incoming bluetooth command.
+ * @brief Reads and handles an incoming Bluetooth command.
  * 
  * @details 
- * Checks if commandReady is true; if false, the function returns. If true, commandBuffer copies its information onto a new 
+ * Checks if commandReady is true; if false, the function returns Bluetooth_None. If true, commandBuffer copies its information onto a new 
  * local buffer. If that local buffer is holding an RPM value, then check if that RPM is within the correct range, if it isn't 
- * the command is ignored; if it is, it's assigned to targetRPM with mutex protection. If the local buffer is holding "START" 
- * then motorEN is set to 1 and systemFault is set to 0. If the local buffer is holding "STOP" then motorEN is set to 0.
+ * the command is ignored; if it is, it's assigned to the rpm output parameter and Bluetooth_RPM is returned. If the local buffer is 
+ * holding "START" then Bluetooth_Start is returned. If the local buffer is holding "STOP" then Bluetooth_Stop is returned.
  * 
  * @note Called every 20ms by the Bluetooth task. Bluetooth_Initialize() must be called first.
+ * 
+ * @param[out] rpm 
+ * Pointer to a float that stores the commanded RPM value taken from the line assembled by HAL_UART_RxCpltCallback(). 
+ * The value is not changed if the return is not Bluetooth_RPM.
+ * 
+ * @return 
+ * Bluetooth_RPM when an RPM command is detected, Bluetooth_Start when a START command is detected, Bluetooth_Stop when a STOP 
+ * command is detected, and Bluetooth_None if the RPM is out of range, no command is pending, or the command is not recognized.
 */
-void Bluetooth_Update(void);
+BluetoothCommand_t Bluetooth_Update(float *rpm);
+
 #endif /* BLUETOOTH_H */
