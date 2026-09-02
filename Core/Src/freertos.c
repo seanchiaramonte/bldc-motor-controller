@@ -31,6 +31,7 @@
 #include "motor.h"
 #include "ina226.h"
 #include "bluetooth.h"
+#include "display.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -344,6 +345,7 @@ void StartBluetoothTask(void *argument)
   Bluetooth_Initialize();
   
   TickType_t nextWake = osKernelGetTickCount();
+  TickType_t nextStatusSend = osKernelGetTickCount();
   /* Infinite loop */
   for(;;)
   {
@@ -366,6 +368,25 @@ void StartBluetoothTask(void *argument)
         motorEN = 0;
         osMutexRelease(sharedDataMutexHandle);
     }  
+  
+    if (osKernelGetTickCount() >= nextStatusSend) { 
+
+      // Copies the globals into locals for Bluetooth_Send
+        osMutexAcquire(sharedDataMutexHandle, osWaitForever);
+        float sendActualRPM = actualRPM; 
+        float sendTargetRPM = targetRPM;
+        float sendCurrent = current;
+        uint16_t sendMotorEN = motorEN;
+        uint16_t sendSystemFault = systemFault;
+        osMutexRelease(sharedDataMutexHandle);
+        Bluetooth_Send(sendActualRPM, sendTargetRPM, sendCurrent, sendMotorEN, sendSystemFault);
+        
+        // Increases the nextStatusSend value by 100 ticks, thus the function is called every 100 ticks
+        // 100 ms because an ~80ms message can't be run every 20ms
+        nextStatusSend = nextStatusSend + 100; 
+
+    }
+
     nextWake = nextWake + 20; // Increases the nextWake value by 20 ticks
     osDelayUntil(nextWake); // bluetoothTask sleeps until 20 ticks after the last wake, effectively scheduling the task to run every 20 ms
 

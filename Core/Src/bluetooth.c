@@ -75,3 +75,29 @@ BluetoothCommand_t Bluetooth_Update(float *rpm)
         
     return Bluetooth_None; // Returned if a command is unrecognized or if RPM is out of range
 }
+
+HAL_StatusTypeDef Bluetooth_Send(float actualRPM, float targetRPM, float current, uint16_t motorEN, uint16_t systemFault)
+{
+
+    char statusBuffer[20]; 
+    if (systemFault == 1) { // Motor faulted
+        snprintf(statusBuffer, sizeof(statusBuffer), "FAULT");
+
+    } else if (motorEN == 0) { // Motor stopped
+        snprintf(statusBuffer, sizeof(statusBuffer), "STOPPED");
+
+    } else { // Motor running (motorEN == 1)
+        snprintf(statusBuffer, sizeof(statusBuffer), "RUNNING");
+    }
+
+    char sendBuffer[100];
+    snprintf(sendBuffer, sizeof(sendBuffer), "actualRPM:%.2f,targetRPM:%.2f,current:%.2f,systemStatus:%s\r\n", actualRPM, targetRPM, current, statusBuffer); 
+    HAL_StatusTypeDef status = HAL_UART_Transmit(&huart3, (uint8_t*)sendBuffer, strlen(sendBuffer), 100); // Send the buffer over Bluetooth to be received by the python task
+
+    if (status != HAL_OK) {
+        printf("Bluetooth Send Error:%d\r\n", status);
+        return status; 
+    }
+
+    return HAL_OK;
+}

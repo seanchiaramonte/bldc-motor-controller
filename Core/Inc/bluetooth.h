@@ -59,4 +59,24 @@ HAL_StatusTypeDef Bluetooth_Initialize(void);
 */
 BluetoothCommand_t Bluetooth_Update(float *rpm);
 
+/** 
+ * @brief Sends a line of data over Bluetooth.
+ * 
+ * @details 
+ * Determines the system status and stores it in statusBuffer. Assembles a line of text containing the actualRPM, targetRPM, 
+ * current, and statusBuffer values. The string is formatted like this: "actualRPM:%.2f,targetRPM:%.2f,current:%.2f,systemStatus:%s\r\n".
+ * The line is sent over USART3.
+ * 
+ * @note The line of text is received by the Python application. Called every 100ms by the Bluetooth task. Bluetooth_Initialize() must be called first.
+ * 
+ * @param actualRPM The actual measured motor speed in RPM.
+ * @param targetRPM The commanded motor speed in RPM.
+ * @param current The motor supply current in mA.
+ * @param motorEN Motor enabled status, 1 indicates enabled.
+ * @param systemFault System fault status, 1 indicates fault.
+ * 
+ * @return HAL_OK if the transmission was successful, or if it failed, a HAL error code (HAL_ERROR, HAL_BUSY, HAL_TIMEOUT).
+*/
+HAL_StatusTypeDef Bluetooth_Send(float actualRPM, float targetRPM, float current, uint16_t motorEN, uint16_t systemFault);
+
 #endif /* BLUETOOTH_H */

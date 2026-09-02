@@ -2,6 +2,7 @@
 #define DISPLAY_H
 
 #include "ssd1306.h"
+#include "ssd1306_fonts.h"
 #include <stdio.h>
 #include <stdint.h>
 
