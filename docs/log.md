@@ -84,3 +84,46 @@
 - Implemented Motor_ApplyCommutation() function in motor.c with Doxygen doc in motor.h
 - Implemented Motor_CheckFault() function in motor.c with Doxygen doc in motor.h
 - Updated log.md
+
+## 2026-08-10
+- Fixed the pid.c by adding a guard for a non-positive dt and adjusting the integralMin and outputMin lower bounds
+- Added temporary debug code in main.c that calls Motor_Initialize(), Motor_Enable(), and Motor_ApplyCommutation()
+- Tested the DRV8313 by measuring the voltages of each motor phase using a multimeter
+
+## 2026-08-11
+- Removed FLOAT from commutation value to comply with hardware constraints
+- Tested detent alignment and added an offset to the encoder module 
+- Tested commutation with motor connected at 12% duty with a sector lead of 2
+
+## 2026-08-12
+- Implemented TIM2 microsecond timebase to get more precise dt measurements and thus more precise RPM calculations
+- Fixed AS5600 read error by adding an I2C1 force reset to main.c
+- Closed the control loop by adding PID_Update to main.c
+
+## 2026-08-13
+- Adjusted kp and ki gains based on motor RPM feedback in CoolTerm
+- Created ina226.h and ina226.c
+- Implemented the INA226_Initialize() function in ina226.c with Doxygen documentation
+
+## 2026-08-14
+- Implemented the INA226_ReadCurrent() function with Doxygen Documentation
+- Implemented the INA226_ReadVoltage() function to ensure the 12V supply is present at the IN- pin
+
+## 2026-08-15
+- Added motorTask, monitorTask, bluetoothTask, and displayTask in STM32CubeMX
+- Regenerated STM32CubeMX initialization code
+
+## 2026-08-17
+- Implemented the motor task in freertos.c with mutex integration in freertos.c
+- Implemented the monitor task in freertos.c with mutex integration in freertos.c
+
+## 2026-08-18
+- Implemented Bluetooth_Initialize() and Bluetooth_Update() functions in bluetooth.c with Doxygen documentation
+- Implemented the bluetooth task with mutex integration in freertos.c
+- Refactored the bluetooth module so that mutexes can be handled entirely in freertos.c
+
+## 2026-08-19
+- Added the i2cMutex and renamed the motorStateMutex to sharedDataMutex
+- Added afiskon ssd1306 library for fonts and display configurations
+- Implemented the Display_Initialize() and Display_Update() functions with Doxygen documentation
+- Implemented the display task with mutex integration in freertos.c
