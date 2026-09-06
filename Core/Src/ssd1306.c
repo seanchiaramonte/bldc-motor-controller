@@ -1,7 +1,12 @@
+// This file has been modified to use FreeRTOS mutexes for I2C access to the SSD1306 display.
 #include "ssd1306.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>  // For memcpy
+#include "cmsis_os.h" // osMutexAcquire / osMutexRelease / osWaitForever
+extern osMutexId_t i2cMutexHandle; // defined in freertos.c
+
+#define SSD1306_I2C_CHUNK_BYTES 32 // 400 kHz clock speed is used so the I2C bus can only handle ~32 bytes per ms
 
 #if defined(SSD1306_USE_I2C)
 
@@ -11,12 +16,31 @@ void ssd1306_Reset(void) {
 
 // Send a byte to the command register
 void ssd1306_WriteCommand(uint8_t byte) {
+    osMutexAcquire(i2cMutexHandle, osWaitForever);
     HAL_I2C_Mem_Write(&SSD1306_I2C_PORT, SSD1306_I2C_ADDR, 0x00, 1, &byte, 1, HAL_MAX_DELAY);
+    osMutexRelease(i2cMutexHandle);
 }
 
 // Send data
 void ssd1306_WriteData(uint8_t* buffer, size_t buff_size) {
-    HAL_I2C_Mem_Write(&SSD1306_I2C_PORT, SSD1306_I2C_ADDR, 0x40, 1, buffer, buff_size, HAL_MAX_DELAY);
+    size_t sent = 0;
+
+    while (sent < buff_size) { // Keep sending until the entire buffer is sent
+        size_t remaining = buff_size - sent; // Checks how many bytes are left to send
+        size_t bytesToSend;
+        if (remaining < SSD1306_I2C_CHUNK_BYTES) {
+            bytesToSend = remaining; // If the remaining bytes are less than the chunk size, send the remaining bytes
+        } else {
+            bytesToSend = SSD1306_I2C_CHUNK_BYTES; // Otherwise, send a full chunk of bytes
+        }
+
+        // Send each chunk of data over I2C with mutex protection
+        osMutexAcquire(i2cMutexHandle, osWaitForever);
+        HAL_I2C_Mem_Write(&SSD1306_I2C_PORT, SSD1306_I2C_ADDR, 0x40, 1, &buffer[sent], bytesToSend, 100); // 100ms to prevent the mutex from being held for too long, in the case of a failure
+        osMutexRelease(i2cMutexHandle);
+
+        sent = sent + bytesToSend; // Update the number of bytes sent
+    }
 }
 
 #elif defined(SSD1306_USE_SPI)

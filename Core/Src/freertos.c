@@ -404,9 +404,7 @@ void StartBluetoothTask(void *argument)
 void StartDisplayTask(void *argument)
 {
   /* USER CODE BEGIN StartDisplayTask */
-  osMutexAcquire(i2cMutexHandle, osWaitForever);
   Display_Initialize();
-  osMutexRelease(i2cMutexHandle);
   
   TickType_t nextWake = osKernelGetTickCount();
   /* Infinite loop */
@@ -420,9 +418,7 @@ void StartDisplayTask(void *argument)
     uint16_t displaySystemFault = systemFault;
     osMutexRelease(sharedDataMutexHandle);
 
-    osMutexAcquire(i2cMutexHandle, osWaitForever);
-    Display_Update(displayActualRPM, displayTargetRPM, displayCurrent, displayMotorEN, displaySystemFault);
-    osMutexRelease(i2cMutexHandle);
+    Display_Update(displayActualRPM, displayTargetRPM, displayCurrent, displayMotorEN, displaySystemFault); // Takes ~24ms so  the i2c mutex is held in ssd1306.c per section, instead of for the whole function
 
     nextWake = nextWake + 200; // Increases the nextWake value by 200 ticks
     osDelayUntil(nextWake); // displayTask sleeps until 200 ticks after the last wake, effectively scheduling the task to run every 200 ms
