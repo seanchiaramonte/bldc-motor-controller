@@ -23,7 +23,7 @@ def start_async_loop():
     asyncio.set_event_loop(loop) # Sets loop global as active event loop
     loop.run_forever()
 
-# Coroutine that pauses to scan for bluetooth devices and connect to the H-10 if found
+# Coroutine that pauses to scan for bluetooth devices and connect to the HM-10 if found
 async def scan_and_connect():
     global client
     global connected
@@ -85,3 +85,22 @@ def ble_notification_handler(sender, data):
 
     except Exception as display_error:
         print("Display Update Error: ", display_error)
+
+# Coroutine that sends a command to the HM-10 without blocking the GUI
+async def send_command(command):
+    if client and connected: # Skip if not connected
+        # Sends bytes to the HM-10 which sends them to the STM32 via UART.
+        # Newline character at the end of each command so HAL_UART_RxCpltCallback knows when to stop reading the command
+        await client.write_gatt_char(HM10_DATA_UUID, (command + "\n").encode())
+
+# Sends "START" via bluetooth when the function is called. This job is put on the background loop, transferring the command from the GUI thread to the bluetooth thread
+def send_start():
+    asyncio.run_coroutine_threadsafe(send_command("START"), loop)
+
+# Same as send_start but sends "STOP" instead
+def send_stop():
+    asyncio.run_coroutine_threadsafe(send_command("STOP"), loop)
+
+# Same as send_start but sends "RPM:<value>" instead
+def send_rpm(value):
+    asyncio.run_coroutine_threadsafe(send_command(f"RPM:{value}"), loop)
