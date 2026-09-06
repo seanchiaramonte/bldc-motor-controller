@@ -104,3 +104,65 @@ def send_stop():
 # Same as send_start but sends "RPM:<value>" instead
 def send_rpm(value):
     asyncio.run_coroutine_threadsafe(send_command(f"RPM:{value}"), loop)
+
+# GUI Section. Builds boxes and assigns them labels and values
+def build_gui():
+    root = tk.Tk() # Creates the main window
+    root.title("Motor Control GUI") # Sets the title of the window
+    root.geometry("400x300") # Small window size because the GUI is simple and only needs to display a few values
+
+    global actual_rpm_display
+    global target_rpm_display
+    global current_display
+    global status_display
+    global connection_display
+
+    actual_rpm_display = tk.StringVar(value="Actual RPM: 0") # Creates box to hold the actual RPM value for display
+    tk.Label(root, textvariable=actual_rpm_display, font=("Arial", 14)).pack(pady=10) # Displays the actual RPM value in the GUI
+
+    target_rpm_display = tk.StringVar(value="Target RPM: 0")
+    tk.Label(root, textvariable=target_rpm_display, font=("Arial", 14)).pack(pady=10)
+
+    current_display = tk.StringVar(value="Current: 0 mA")
+    tk.Label(root, textvariable=current_display, font=("Arial", 14)).pack(pady=10)
+
+    status_display = tk.StringVar(value="Status: 0")
+    tk.Label(root, textvariable=status_display, font=("Arial", 14)).pack(pady=10)
+
+    connection_display = tk.StringVar(value="Not Connected")
+    tk.Label(root, textvariable=connection_display, font=("Arial", 14)).pack(pady=10)
+
+    # RPM Slider
+    def slide_display(slide_value):
+        slider_display.set(f"RPM: {int(float(slide_value))}") # Updates the target RPM display as the slider is moved
+
+    slider_display = tk.StringVar(value="RPM: 0")
+    tk.Label(root, textvariable=slider_display, font=("Arial", 14)).pack(pady=10) # Displays the target RPM value while the slider is being moved
+
+    rpm_slider = ttk.Scale(root, from_=0, to=1000, orient='horizontal', command=slide_display) # Slider for target RPM
+    rpm_slider.pack(pady=2)
+
+    # Sets RPM according to the slider value
+    def set_rpm():
+        send_rpm(int(rpm_slider.get())) # Sends the value on the slider to the motor controller
+
+    tk.Button(root, text="Set RPM", command=set_rpm).pack(pady=10) # Calls set_rpm when button is pressed, confirming the user's selection on the slider
+
+    # Connect Button
+    def on_connect(): # Function runs when connect button is pressed
+        asyncio.run_coroutine_threadsafe(scan_and_connect(), loop) # Runs scan_and_connect on the background thread 
+
+    tk.Button(root, text="Connect", command=on_connect).pack(pady=10) # Calls on_connect when button is pressed
+
+    # Start and Stop Buttons
+    tk.Button(root, text="START", command=send_start).pack(pady=10)
+    tk.Button(root, text="STOP", command=send_stop).pack(pady=10)
+
+    return root
+
+if __name__ == "__main__":
+    async_thread = threading.Thread(target=start_async_loop, daemon=True) # Creates a new thread to run the asyncio loop in the background so the GUI doesn't freeze when reading bluetooth
+    async_thread.start() # Starts the thread that runs the asyncio loop in the background
+
+    root = build_gui() # Makes window
+    root.mainloop() # Detects clicks and interactions with the GUI and updates the window accordingly
