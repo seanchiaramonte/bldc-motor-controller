@@ -54,3 +54,34 @@ async def scan_and_connect():
         connected = False
         connection_display.set(f"Error: {connection_error}")
         print("Connection Error: ", connection_error)
+
+# Called by bleak each time the HM-10 sends data (callback)
+# Splits the incoming string into its values and updates the GUI displays
+def ble_notification_handler(sender, data):
+    try:
+        # Translates binary from the HM-10 into text and skips error bytes
+        # Removes newline character created by c
+        text = data.decode('utf-8', errors="ignore").strip()
+        text = text.split(',') # Splits at commas to separate data (RPM, current, status)
+
+        # Empty dictionary to hold the motor data values
+        motor_data = {}
+
+        for part in text:
+            section = part.split(':') # Splits on colons to separate names from values (actualRPM: 1000, current: 500, etc.)
+            motor_data[section[0]] = section[1] # Assigns each value [1] to its name [0] in the motor_data dictionary
+
+        # Gives the value assigned with the specified string in the dictionary, or 0 if the string is not found
+        actual_rpm = motor_data.get('actualRPM', 0)
+        target_rpm = motor_data.get('targetRPM', 0)
+        current = motor_data.get('current', 0)
+        system_status = motor_data.get('systemStatus', 0)
+
+        # Updates the GUI (the StringVar boxes) with the values
+        actual_rpm_display.set(f"Actual RPM: {actual_rpm}")
+        target_rpm_display.set(f"Target RPM: {target_rpm}")
+        current_display.set(f"Current: {current} mA")
+        status_display.set(f"Status: {system_status}")
+
+    except Exception as display_error:
+        print("Display Update Error: ", display_error)
