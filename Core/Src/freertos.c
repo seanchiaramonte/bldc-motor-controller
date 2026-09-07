@@ -39,7 +39,7 @@
 volatile float targetRPM = 250; // Temp value for debugging
 volatile float actualRPM; // Global RPM variable accessible by all tasks
 volatile float current; // mA
-volatile uint16_t motorEN = 1; // Set by bluetoothTask
+volatile uint16_t motorEN = 0; // Set by bluetoothTask. Initialized to zero to ensure motor is disabled at startup
 volatile uint16_t systemFault; // Set by monitorTask
 
 /* USER CODE END Includes */
@@ -193,7 +193,6 @@ void StartMotorTask(void *argument)
   PID_t speedPID; // Declares speedPID variable of the PID_t type
   Encoder_Initialize(angle);
   Motor_Initialize();
-  Motor_Enable();
   PID_Initialize(&speedPID);
 
   uint32_t currentPidTick = 0;
@@ -214,6 +213,13 @@ void StartMotorTask(void *argument)
     if (!mutexEN || mutexFault) {
       Motor_Disable();
       PID_Reset(&speedPID); // Zeros values in PID struct so that integral does not continue accumulating
+      previousPidTick = __HAL_TIM_GET_COUNTER(&htim2); // Resets previousPidTick when the motor is stopped
+
+      // Resets actualRPM to zero when the motor is stopped 
+      osMutexAcquire(sharedDataMutexHandle, osWaitForever);
+      actualRPM = 0.0f;
+      osMutexRelease(sharedDataMutexHandle);
+
       nextWake = nextWake + 1; // Increases the nextWake value by one tick
       osDelayUntil(nextWake); // motorTask sleeps until one tick after the last wake, effectively scheduling the task to run every ms
       continue; // Jumps to the next loop iteration
@@ -248,6 +254,10 @@ void StartMotorTask(void *argument)
 
       float dutyCycle;
       dutyCycle = PID_Update(&speedPID, mutexTargetRPM, RPM, dt);
+
+      if (RPM < 50.0f && dutyCycle > 40.0f) { // Clamps dutyCycle to 40% when RPM is below 50 to prevent motor from drawing too much current and faulting
+        dutyCycle = 40.0f;
+      }
 
       // Wraps sector because adding LEAD can produce out of bounds values like 6 or 7
       Motor_ApplyCommutation(((Encoder_GetSector() + LEAD) % 6), dutyCycle);
