@@ -15,6 +15,7 @@ target_rpm_display = None # Target RPM value
 current_display = None # Current mA value
 status_display = None # Motor status
 connection_display = None # Connection status
+receive_buffer = "" # Accumulates BLE line segments until a full line arrives
 
 # Starts the asyncio loop in a background thread and assigns it to the global variable loop so it can be used by other functions
 def start_async_loop():
@@ -58,30 +59,43 @@ async def scan_and_connect():
 # Called by bleak each time the HM-10 sends data (callback)
 # Splits the incoming string into its values and updates the GUI displays
 def ble_notification_handler(sender, data):
+
+    # Buffer needd because only 20 bytes can be sent at a time over BLE, so the HM-10 may send a command in multiple sections.
+    # The buffer stores the data until a newline character is received, which indicates the end of a command.
+    global receive_buffer
     try:
         # Translates binary from the HM-10 into text and skips error bytes
-        # Removes newline character created by c
-        text = data.decode('utf-8', errors="ignore").strip()
-        text = text.split(',') # Splits at commas to separate data (RPM, current, status)
+        # Adds the new data to the buffer
+        receive_buffer = receive_buffer + data.decode('utf-8', errors="ignore")
 
-        # Empty dictionary to hold the motor data values
-        motor_data = {}
+        # Rebuilds the line from the two sections received from the HM-10
+        while '\n' in receive_buffer: # Checks for newline character which indicates the end of a command
+            message_part = receive_buffer.split('\n', 1) # Splits the buffer into two parts at the first newline character
+            line = message_part[0] # Assings the completed part to the line variable
+            receive_buffer = message_part[1] # Assigns the remaining part to the buffer variable for the next iteration
+            line = line.strip() # Assigns completed line to line variable 
+            if not line: # Skips empty lines
+                continue
 
-        for part in text:
-            section = part.split(':') # Splits on colons to separate names from values (actualRPM: 1000, current: 500, etc.)
-            motor_data[section[0]] = section[1] # Assigns each value [1] to its name [0] in the motor_data dictionary
+            # Empty dictionary to hold the motor data values
+            motor_data = {}
 
-        # Gives the value assigned with the specified string in the dictionary, or 0 if the string is not found
-        actual_rpm = motor_data.get('actualRPM', 0)
-        target_rpm = motor_data.get('targetRPM', 0)
-        current = motor_data.get('current', 0)
-        system_status = motor_data.get('systemStatus', 0)
+            for part in line.split(','): # Splits the line at commas to separate data
+                if ':' in part:
+                    section = part.split(':', 1) # Splits on colons to separate names from values (actualRPM: 1000, current: 500, etc.)
+                    motor_data[section[0]] = section[1] # Assigns each value [1] to its name [0] in the motor_data dictionary
 
-        # Updates the GUI (the StringVar boxes) with the values
-        actual_rpm_display.set(f"Actual RPM: {actual_rpm}")
-        target_rpm_display.set(f"Target RPM: {target_rpm}")
-        current_display.set(f"Current: {current} mA")
-        status_display.set(f"Status: {system_status}")
+            # Gives the value assigned with the specified string in the dictionary, or 0 if the string is not found
+            actual_rpm = motor_data.get('A', 0)
+            target_rpm = motor_data.get('T', 0)
+            current = motor_data.get('C', 0)
+            system_status = motor_data.get('S', 0)
+
+            # Updates the GUI (the StringVar boxes) with the values
+            actual_rpm_display.set(f"Actual RPM: {actual_rpm}")
+            target_rpm_display.set(f"Target RPM: {target_rpm}")
+            current_display.set(f"Current: {current} mA")
+            status_display.set(f"Status: {system_status}")
 
     except Exception as display_error:
         print("Display Update Error: ", display_error)
@@ -109,7 +123,7 @@ def send_rpm(value):
 def build_gui():
     root = tk.Tk() # Creates the main window
     root.title("Motor Control GUI") # Sets the title of the window
-    root.geometry("400x300") # Small window size because the GUI is simple and only needs to display a few values
+    root.geometry("400x500") # Small window size big enough to fit all buttons and values
 
     global actual_rpm_display
     global target_rpm_display

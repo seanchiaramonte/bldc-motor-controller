@@ -91,7 +91,7 @@ HAL_StatusTypeDef Bluetooth_Send(float actualRPM, float targetRPM, float current
     }
 
     char sendBuffer[100];
-    snprintf(sendBuffer, sizeof(sendBuffer), "actualRPM:%.2f,targetRPM:%.2f,current:%.2f,systemStatus:%s\r\n", actualRPM, targetRPM, current, statusBuffer); 
+    snprintf(sendBuffer, sizeof(sendBuffer), "A:%.2f,T:%.2f,C:%.2f,S:%s\r\n", actualRPM, targetRPM, current, statusBuffer); 
     HAL_StatusTypeDef status = HAL_UART_Transmit(&huart3, (uint8_t*)sendBuffer, strlen(sendBuffer), 100); // Send the buffer over Bluetooth to be received by the python task
 
     if (status != HAL_OK) {
