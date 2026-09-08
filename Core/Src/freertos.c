@@ -40,7 +40,7 @@ volatile float targetRPM; // Global target RPM variable accessible by all tasks
 volatile float actualRPM; // Global RPM variable accessible by all tasks
 volatile float current; // mA
 volatile uint16_t motorEN = 0; // Set by bluetoothTask. Initialized to zero to ensure motor is disabled at startup
-volatile uint16_t systemFault; // Set by monitorTask and motorTask.
+volatile uint16_t systemFault; // Set by monitorTask and motorTask
 
 /* USER CODE END Includes */
 
@@ -184,7 +184,8 @@ void MX_FREERTOS_Init(void) {
 void StartMotorTask(void *argument)
 {
   /* USER CODE BEGIN StartMotorTask */
-  uint16_t angle;
+  uint16_t angle = 0;
+  uint16_t readFailures = 0; // Counts the number of consecutive failed AS5600 reads
 
   osMutexAcquire(i2cMutexHandle, osWaitForever);
   HAL_StatusTypeDef status = AS5600_ReadAngle(&angle);
@@ -233,13 +234,23 @@ void StartMotorTask(void *argument)
 
     if (status != HAL_OK) {
       Motor_Disable();
-      printf("Angle Read Error:%d\r\n", status);
+
+      if (++readFailures >= 5) { // Faults after 5 consecutive As5600 read failures so small glitches don't fault the system
+        printf("Angle Read Error:%d\r\n", status);
+
+        osMutexAcquire(sharedDataMutexHandle, osWaitForever);
+        systemFault = 1;
+        motorEN = 0;
+        osMutexRelease(sharedDataMutexHandle);
+      } 
+    
       nextWake = nextWake + 1; // Increases the nextWake value by one tick
       osDelayUntil(nextWake); // motorTask sleeps until one tick after the last wake, effectively scheduling the task to run every ms
       continue; // Jumps to next loop iteration
 
     } else if (status == HAL_OK) {
 
+      readFailures = 0; // Resets the readFailures counter to zero if the read is successful
       Encoder_Update(angle);
 
       // New RPM variable used in PID_Update and to update actualRPM 
