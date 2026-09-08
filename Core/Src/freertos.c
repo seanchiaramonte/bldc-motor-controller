@@ -36,11 +36,11 @@
 #include <string.h>
 #include <stdint.h>
 
-volatile float targetRPM = 250; // Temp value for debugging
+volatile float targetRPM; // Global target RPM variable accessible by all tasks
 volatile float actualRPM; // Global RPM variable accessible by all tasks
 volatile float current; // mA
 volatile uint16_t motorEN = 0; // Set by bluetoothTask. Initialized to zero to ensure motor is disabled at startup
-volatile uint16_t systemFault; // Set by monitorTask
+volatile uint16_t systemFault; // Set by monitorTask and motorTask.
 
 /* USER CODE END Includes */
 
@@ -225,7 +225,7 @@ void StartMotorTask(void *argument)
       continue; // Jumps to the next loop iteration
     }
 
-    Motor_Enable(); // Ensures EN is high after a fault that may have pulled it low with Motor_Disable()
+    Motor_Enable(); // EN is set high every loop iteration to ensure the motor is enabled after startup, a fault, or a stop
 
     osMutexAcquire(i2cMutexHandle, osWaitForever);
     status = AS5600_ReadAngle(&angle);
@@ -307,8 +307,13 @@ void StartMonitorTask(void *argument)
     osMutexRelease(i2cMutexHandle);
     
     if (status != HAL_OK) {
-      Motor_Disable();
       printf("Current Read Failure:%d\r\n", status);
+
+      osMutexAcquire(sharedDataMutexHandle, osWaitForever);
+      systemFault = 1;
+      motorEN = 0;
+      osMutexRelease(sharedDataMutexHandle);
+
       nextWake = nextWake + 10; // Increases the nextWake value by 10 ticks
       osDelayUntil(nextWake); // monitorTask sleeps until 10 ticks after the last wake, effectively scheduling the task to run every 10 ms
       continue; // Jumps to next loop iteration
