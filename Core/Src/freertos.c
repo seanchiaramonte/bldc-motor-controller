@@ -36,7 +36,7 @@
 #include <string.h>
 #include <stdint.h>
 
-volatile float targetRPM; // Global target RPM variable accessible by all tasks
+volatile float targetRPM = 0; // Global target RPM variable accessible by all tasks. Stays 0 until commanded
 volatile float actualRPM; // Global RPM variable accessible by all tasks
 volatile float current; // mA
 volatile uint16_t motorEN = 0; // Set by bluetoothTask. Initialized to zero to ensure motor is disabled at startup
@@ -266,9 +266,10 @@ void StartMotorTask(void *argument)
       float dutyCycle;
       dutyCycle = PID_Update(&speedPID, mutexTargetRPM, RPM, dt);
 
-      if (RPM < 50.0f && dutyCycle > 40.0f) { // Clamps dutyCycle to 40% when RPM is below 50 to prevent motor from drawing too much current and faulting
+      // Clamps dutyCycle to 40% if actual RPM is less than 80% of targetRPM to prevent the motor from drawing too much current on startup
+      if (RPM < (mutexTargetRPM * 0.8f) && dutyCycle > 40.0f) {
         dutyCycle = 40.0f;
-      }
+      } 
 
       // Wraps sector because adding LEAD can produce out of bounds values like 6 or 7
       Motor_ApplyCommutation(((Encoder_GetSector() + LEAD) % 6), dutyCycle);
