@@ -2531,7 +2531,7 @@
 			(on_board yes)
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "J13"
+			(property "Reference" "J5"
 				(at 5.334 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -2553,7 +2553,7 @@
 					(justify left)
 				)
 			)
-			(property "Footprint" ""
+			(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -2667,7 +2667,7 @@
 				(pin passive line
 					(at -5.08 2.54 0)
 					(length 3.81)
-					(name "VCC"
+					(name "GND"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2685,7 +2685,7 @@
 				(pin passive line
 					(at -5.08 0 0)
 					(length 3.81)
-					(name "GND"
+					(name "VCC"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -6805,7 +6805,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x08_P2.54mm_Vertical"
 			(at 200.66 86.36 0)
 			(hide yes)
 			(show_name no)
@@ -7265,7 +7265,7 @@
 	)
 	(symbol
 		(lib_id "power:+3V3")
-		(at 195.58 105.41 90)
+		(at 195.58 107.95 90)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -7275,7 +7275,7 @@
 		(dnp no)
 		(uuid "76b5da65-f70a-4f6f-be19-80541394333f")
 		(property "Reference" "#PWR017"
-			(at 199.39 105.41 0)
+			(at 199.39 107.95 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7286,7 +7286,7 @@
 			)
 		)
 		(property "Value" "+3V3"
-			(at 190.246 105.41 90)
+			(at 190.246 107.95 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7296,7 +7296,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 195.58 105.41 0)
+			(at 195.58 107.95 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7307,7 +7307,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 195.58 105.41 0)
+			(at 195.58 107.95 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7318,7 +7318,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 195.58 105.41 0)
+			(at 195.58 107.95 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7342,7 +7342,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 195.58 107.95 270)
+		(at 195.58 105.41 270)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -7352,7 +7352,7 @@
 		(dnp no)
 		(uuid "76ed829f-b607-435c-9841-37fdc6d0ec2d")
 		(property "Reference" "#PWR018"
-			(at 189.23 107.95 0)
+			(at 189.23 105.41 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7363,7 +7363,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 190.754 107.95 90)
+			(at 190.754 105.41 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7373,7 +7373,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 195.58 107.95 0)
+			(at 195.58 105.41 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7384,7 +7384,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 195.58 107.95 0)
+			(at 195.58 105.41 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7395,7 +7395,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 195.58 107.95 0)
+			(at 195.58 105.41 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7843,7 +7843,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
 			(at 109.22 140.97 0)
 			(hide yes)
 			(show_name no)
@@ -7924,7 +7924,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical"
 			(at 200.66 107.95 0)
 			(hide yes)
 			(show_name no)
@@ -8012,7 +8012,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
 			(at 200.66 62.23 0)
 			(hide yes)
 			(show_name no)
@@ -8099,7 +8099,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_2x19_P2.54mm_Vertical"
 			(at 92.71 81.28 0)
 			(hide yes)
 			(show_name no)
@@ -8366,7 +8366,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "bldc_carrier:SimpleFOC_Mini_v1"
 			(at 158.75 130.81 0)
 			(hide yes)
 			(show_name no)
@@ -8867,7 +8867,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical"
 			(at 116.84 127 0)
 			(hide yes)
 			(show_name no)
@@ -9031,7 +9031,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_2x19_P2.54mm_Vertical"
 			(at 147.32 81.28 0)
 			(hide yes)
 			(show_name no)

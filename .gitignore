@@ -48,6 +48,8 @@ env/
 fp-info-cache
 *.lck
 _autosave-*
+_restore_backup*/
+*.kicad_prl
 
 #OS junk
 .DS_Store
@@ -58,6 +60,7 @@ desktop.ini
 *~
 *.swp
 *.swo
+.history/
 
 #Logs/temp
 *.log
